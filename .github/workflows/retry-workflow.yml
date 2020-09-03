@@ -1,0 +1,25 @@
+name: Retry Pull Request
+
+on:
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Pull Request Number
+        required: true
+  pull_request_target:
+    types:
+      - labeled
+  # schedule:
+  #   - cron: '*/10 * * * *'
+
+jobs:
+  retry-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./
+        with:
+          once-label: 'ci-requeue'
+          continuous-label: 'ci-retry'
+          workflow: pull-request-fail.yml
+          # token: ${{ secrets.MY_GITHUB_TOKEN }}
