@@ -1,11 +1,33 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Re-run a Workflow'
+description: 'Re-run a workflow once or continuously until it succeeds.'
+author: 'reitermarkus'
+
 inputs:
-  milliseconds: # change this
+  token:
+    description: >
+      A GitHub Token other than the default `GITHUB_TOKEN` needs to be
+      specified in order to be able to re-run workflows.
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+  once-label:
+    description: >
+      When this label is added to a pull request, re-run the `workflow`
+      once and remove the label again.
+    required: false
+  continuous-label:
+    description: >
+      When this label is added to a pull request, continuously re-run the
+      `workflow` until it succeeds or is cancelled. The action needs to be run
+      on `workflow_run`, `push` or `schedule` events for this to work.
+    required: false
+  trigger-labels:
+    description: >
+      When any of the labels in this comma-separated list is added to or
+      removed from to a pull request, re-run the `workflow` once.
+    required: false
+  workflow:
+    description: File name or ID of the workflow which should be re-run.
+    required: true
+
 runs:
   using: 'node12'
   main: 'dist/index.js'
