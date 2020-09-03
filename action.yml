@@ -1,11 +1,20 @@
-name: 'Your name here'
-description: 'Provide a description here'
+name: 'Retry a Workflow Run'
+description: 'Retry a workflow run once or continuously until it passes.'
 author: 'Your name or organization here'
 inputs:
-  milliseconds: # change this
+  token:
+    description: GitHub Token
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    default: ${{ github.token }}
+  once-label:
+    description: Label for retrying a workflow once
+    required: false
+  continuous-label:
+    description: Label for continously retrying a workflow
+    required: false
+  workflow:
+    description: Workflow which should be retried
+    required: true
 runs:
   using: 'node12'
   main: 'dist/index.js'

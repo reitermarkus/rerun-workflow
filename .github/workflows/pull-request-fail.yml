@@ -1,0 +1,19 @@
+name: Pull Request Fail
+
+on: pull_request_target
+
+jobs:
+  pull-request-fail:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -euo pipefail
+
+          date
+
+          sleep 30
+
+          make_pr_fail="$(curl -sSfL -H 'Authorization: token ${{ github.token }}' '${{ github.event.pull_request.url }}' | jq -r '.labels | any(.name == "make-pr-fail")')"
+          if [[ "${make_pr_fail}" == 'true' ]]; then
+            exit 1
+          fi

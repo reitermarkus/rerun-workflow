@@ -1,0 +1,18 @@
+query PullRequestsWithLabels($owner: String!, $repo: String!, $labels: [String!]) {
+  repository(owner: $owner, name: $repo) {
+    pullRequests(labels: $labels, states: OPEN, first: 100, orderBy: { field: UPDATED_AT, direction: DESC }) {
+      edges {
+        node {
+          number
+          labels(first: 100, orderBy: { field: CREATED_AT, direction: DESC }) {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+name: Re-run Pull Request Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Pull Request Number
+        required: true
+  workflow_run:
+    types:
+      - completed
+  pull_request_target:
+    types:
+      - labeled
+  push:
+  schedule:
+    - cron: '*/30 * * * *'
+
+jobs:
+  rerun-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Event Data
+        run: echo '${{ toJSON(github.event) }}'
+      - uses: actions/checkout@v2
+      - name: Re-run pull request workflows
+        uses: ./
+        with:
+          token: ${{ secrets.MY_GITHUB_TOKEN }}
+          once-label: 'ci-requeue'
+          continuous-label: 'ci-retry'
+          workflow: pull-request-fail.yml
