@@ -1,0 +1,11 @@
+name: Pull Request Fail
+
+on: pull_request
+
+jobs:
+  pull-request-fail:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          sleep 30
+          false
