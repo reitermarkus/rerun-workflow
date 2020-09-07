@@ -6,6 +6,11 @@ import { Octokit, PullRequest, WorkflowRun } from './types'
 
 export const PULL_REQUEST_EVENTS = ['pull_request', 'pull_request_target']
 
+export async function getPullRequest(octokit: Octokit, number: number): Promise<PullRequest> {
+  const response = await octokit.pulls.get({ ...github.context.repo, pull_number: number })
+  return response.data
+}
+
 export function isSuccessfulOrCancelled(workflowRun: WorkflowRun): boolean {
   const { status, conclusion } = workflowRun
   return status === 'completed' && (conclusion === 'success' || conclusion === 'cancelled')

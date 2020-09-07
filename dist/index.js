@@ -1553,11 +1553,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.removeLabelFromPullRequest = exports.rerunWorkflow = exports.pullRequestsForWorkflowRun = exports.latestWorkflowRunsForPullRequest = exports.isSuccessfulOrCancelled = exports.PULL_REQUEST_EVENTS = void 0;
+exports.removeLabelFromPullRequest = exports.rerunWorkflow = exports.pullRequestsForWorkflowRun = exports.latestWorkflowRunsForPullRequest = exports.isSuccessfulOrCancelled = exports.getPullRequest = exports.PULL_REQUEST_EVENTS = void 0;
 const core = __importStar(__webpack_require__(2186));
 const github = __importStar(__webpack_require__(5438));
 const ts_is_present_1 = __webpack_require__(1462);
 exports.PULL_REQUEST_EVENTS = ['pull_request', 'pull_request_target'];
+function getPullRequest(octokit, number) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield octokit.pulls.get(Object.assign(Object.assign({}, github.context.repo), { pull_number: number }));
+        return response.data;
+    });
+}
+exports.getPullRequest = getPullRequest;
 function isSuccessfulOrCancelled(workflowRun) {
     const { status, conclusion } = workflowRun;
     return status === 'completed' && (conclusion === 'success' || conclusion === 'cancelled');
@@ -1742,7 +1749,7 @@ class RerunWorkflowAction {
             if (!this.input.onceLabel) {
                 return;
             }
-            helpers_1.removeLabelFromPullRequest(octokit, pullRequest, this.input.onceLabel);
+            yield helpers_1.removeLabelFromPullRequest(octokit, pullRequest, this.input.onceLabel);
         });
     }
     removeContinuousLabel(octokit, pullRequest) {
@@ -1750,20 +1757,20 @@ class RerunWorkflowAction {
             if (!this.input.continuousLabel) {
                 return;
             }
-            helpers_1.removeLabelFromPullRequest(octokit, pullRequest, this.input.continuousLabel);
+            yield helpers_1.removeLabelFromPullRequest(octokit, pullRequest, this.input.continuousLabel);
         });
     }
     removeContinuousLabelIfSuccessfulOrCancelled(octokit, workflowRuns, pullRequest) {
         return __awaiter(this, void 0, void 0, function* () {
             // If all workflows finished successfully or were cancelled, stop continuously retrying by removing the `continuousLabel`.
             if (workflowRuns.every(helpers_1.isSuccessfulOrCancelled)) {
-                this.removeContinuousLabel(octokit, pullRequest);
+                yield this.removeContinuousLabel(octokit, pullRequest);
             }
         });
     }
     rerunWorkflowsForPullRequest(octokit, number, rerunCondition) {
         return __awaiter(this, void 0, void 0, function* () {
-            const pullRequest = (yield octokit.pulls.get(Object.assign(Object.assign({}, github.context.repo), { pull_number: number }))).data;
+            const pullRequest = yield helpers_1.getPullRequest(octokit, number);
             const workflowRuns = yield helpers_1.latestWorkflowRunsForPullRequest(octokit, this.input.workflow, pullRequest);
             let reruns = 0;
             for (const workflowRun of workflowRuns) {
@@ -1786,14 +1793,14 @@ class RerunWorkflowAction {
                                 break;
                             }
                             case types_1.RerunCondition.Always: {
-                                helpers_1.rerunWorkflow(octokit, workflowRun.id);
+                                yield helpers_1.rerunWorkflow(octokit, workflowRun.id);
                                 reruns += 1;
                                 break;
                             }
                             case types_1.RerunCondition.OnFailure: {
                                 switch (workflowRun.conclusion) {
                                     case 'failure': {
-                                        helpers_1.rerunWorkflow(octokit, workflowRun.id);
+                                        yield helpers_1.rerunWorkflow(octokit, workflowRun.id);
                                         reruns += 1;
                                         break;
                                     }
@@ -1821,10 +1828,10 @@ class RerunWorkflowAction {
                 }
             }
             // Always remove the `onceLabel`.
-            this.removeOnceLabel(octokit, pullRequest);
+            yield this.removeOnceLabel(octokit, pullRequest);
             // Only try removing the `continuousLabel` if we didn't re-run any workflows this time.
             if (reruns === 0) {
-                this.removeContinuousLabelIfSuccessfulOrCancelled(octokit, workflowRuns, pullRequest);
+                yield this.removeContinuousLabelIfSuccessfulOrCancelled(octokit, workflowRuns, pullRequest);
             }
         });
     }
@@ -1837,6 +1844,11 @@ class RerunWorkflowAction {
             if ((action === 'labeled' && label.name === this.input.onceLabel) ||
                 ((action === 'labeled' || action === 'unlabeled') && this.input.triggerLabels.includes(label.name))) {
                 yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Always);
+            }
+            else if (action === 'closed') {
+                const pullRequest = yield helpers_1.getPullRequest(octokit, number);
+                yield this.removeOnceLabel(octokit, pullRequest);
+                yield this.removeContinuousLabel(octokit, pullRequest);
             }
         });
     }
@@ -1854,10 +1866,10 @@ class RerunWorkflowAction {
             }));
             for (const { number, labels } of pullRequests) {
                 if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {
-                    this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Always);
+                    yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Always);
                 }
                 else if (this.input.continuousLabel && labels.includes(this.input.continuousLabel)) {
-                    this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.OnFailure);
+                    yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.OnFailure);
                 }
             }
         });
@@ -1881,7 +1893,7 @@ class RerunWorkflowAction {
                     core.info(`Found ${pullRequests.length} pull requests for workflow run ${workflowRun.id}: ${pullRequests.join(', ')}`);
                 }
                 for (const number of pullRequests) {
-                    this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Never);
+                    yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Never);
                 }
             }
         });
