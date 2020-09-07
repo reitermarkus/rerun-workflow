@@ -16,10 +16,10 @@ export function get(): Input {
   const workflow = core.getInput('workflow', { required: true })
 
   if (!onceLabel && !continuousLabel && !triggerLabels) {
-    throw new Error('One of `once-label` or `continous-label` must be specified.')
+    throw new Error('One of `once-label`, `continous-label` or `trigger-labels` must be specified.')
   }
 
-  if (onceLabel == continuousLabel) {
+  if (onceLabel && continuousLabel && onceLabel == continuousLabel) {
     throw new Error('`once-label` and `continous-label` cannot have the same value.')
   }
 
