@@ -20,7 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Event Data
-        run: echo '${{ toJSON(github.event) }}'
+        run: |
+          cat <<-'EOF'
+            ${{ toJSON(github.event) }}
+          EOF
       - uses: actions/checkout@v2
       - name: Re-run pull request workflows
         uses: ./
