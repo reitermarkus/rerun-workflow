@@ -33,6 +33,7 @@ on:
       - completed
   pull_request_target:
     types:
+      - closed
       - labeled
       - unlabeled
   schedule:
