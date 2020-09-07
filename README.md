@@ -20,6 +20,7 @@ This action allows re-running a workflow when labels are added to (or removed fr
 
 \* At least one of `once-label`, `continuous-label` or `trigger-labels` is required.
 
+
 ## Example Workflow
 
 ```yml
@@ -52,6 +53,7 @@ jobs:
           trigger-labels: ci-trigger-1,ci-trigger-2
           workflow: ci.yml
 ```
+
 
 ## Known Issues
 
