@@ -1519,6 +1519,105 @@ exports.PullRequestsWithLabels = graphql_tag_1.default `
 
 /***/ }),
 
+/***/ 5008:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.removeLabelFromPullRequest = exports.rerunWorkflow = exports.latestWorkflowRunsForPullRequest = exports.PULL_REQUEST_EVENTS = void 0;
+const core = __importStar(__webpack_require__(2186));
+const github = __importStar(__webpack_require__(5438));
+const ts_is_present_1 = __webpack_require__(1462);
+exports.PULL_REQUEST_EVENTS = ['pull_request', 'pull_request_target'];
+function latestWorkflowRunForEvent(workflowRuns, event) {
+    return workflowRuns
+        .filter(w => w.event === event)
+        .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))[0];
+}
+/// Returns the workflow run for the latest commit of a pull request.
+function latestWorkflowRunsForPullRequest(octokit, workflow, pullRequest) {
+    return __awaiter(this, void 0, void 0, function* () {
+        core.info(`Searching workflows for pull request ${pullRequest.number} ...`);
+        const response = yield octokit.actions.listWorkflowRuns(Object.assign(Object.assign({}, github.context.repo), { 
+            // Workflow ID can be a string or a number.
+            workflow_id: workflow, event: exports.PULL_REQUEST_EVENTS.join(' OR '), branch: pullRequest.head.ref, per_page: 100 }));
+        const workflowRuns = response.data.workflow_runs;
+        const matchingWorkflowRuns = workflowRuns.filter(({ head_branch, head_sha }) => head_branch === pullRequest.head.ref && head_sha === pullRequest.head.sha);
+        if (matchingWorkflowRuns.length === 0) {
+            core.warning('No matching workflow runs found.');
+            return [];
+        }
+        const latestWorkflowRuns = exports.PULL_REQUEST_EVENTS.map(event => latestWorkflowRunForEvent(matchingWorkflowRuns, event)).filter(ts_is_present_1.isPresent);
+        core.info(`Found ${latestWorkflowRuns.length} matching workflow runs: ${latestWorkflowRuns
+            .map(r => r.id)
+            .join(', ')}`);
+        return latestWorkflowRuns;
+    });
+}
+exports.latestWorkflowRunsForPullRequest = latestWorkflowRunsForPullRequest;
+function rerunWorkflow(octokit, id) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            core.info(`Re-running workflow run ${id} …`);
+            yield octokit.actions.reRunWorkflow(Object.assign(Object.assign({}, github.context.repo), { run_id: id }));
+            core.info(`Re-run of workflow run ${id} successfully started.`);
+        }
+        catch (err) {
+            core.setFailed(`Re-running workflow run ${id} failed: ${err}`);
+        }
+    });
+}
+exports.rerunWorkflow = rerunWorkflow;
+function removeLabelFromPullRequest(octokit, pullRequest, label) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { number, labels } = pullRequest;
+        const currentLabels = labels.map(l => l.name);
+        if (!currentLabels.includes(label)) {
+            return;
+        }
+        try {
+            core.info(`Removing '${label}' label from pull request ${number} …`);
+            yield octokit.issues.removeLabel(Object.assign(Object.assign({}, github.context.repo), { issue_number: number, name: label }));
+        }
+        catch (err) {
+            core.setFailed(`Failed removing '${label}' label from pull request ${number}: ${err}`);
+        }
+    });
+}
+exports.removeLabelFromPullRequest = removeLabelFromPullRequest;
+
+
+/***/ }),
+
 /***/ 8657:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -1607,107 +1706,46 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const input_1 = __webpack_require__(8657);
 const core = __importStar(__webpack_require__(2186));
 const github = __importStar(__webpack_require__(5438));
 const ts_is_present_1 = __webpack_require__(1462);
 const graphql_1 = __webpack_require__(9088);
-var RerunCondition;
-(function (RerunCondition) {
-    // Always re-run unless already queued or in progress.
-    RerunCondition[RerunCondition["Always"] = 0] = "Always";
-    // Re-run only when completed and failed.
-    RerunCondition[RerunCondition["OnFailure"] = 1] = "OnFailure";
-    // Never re-run, only unlabel.
-    RerunCondition[RerunCondition["Never"] = 2] = "Never";
-})(RerunCondition || (RerunCondition = {}));
-const PULL_REQUEST_EVENTS = ['pull_request', 'pull_request_target'];
-function latestWorkflowRunForEvent(workflowRuns, event) {
-    return workflowRuns
-        .filter(w => w.event === event)
-        .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))[0];
-}
-/// Returns the workflow run for the latest commit of a pull request.
-function latestWorkflowRunsForPullRequest(octokit, workflow, pullRequest) {
-    return __awaiter(this, void 0, void 0, function* () {
-        core.info(`Searching workflows for pull request ${pullRequest.number} ...`);
-        const response = yield octokit.actions.listWorkflowRuns(Object.assign(Object.assign({}, github.context.repo), { 
-            // Workflow ID can be a string or a number.
-            workflow_id: workflow, event: PULL_REQUEST_EVENTS.join(' OR '), branch: pullRequest.head.ref, per_page: 100 }));
-        const workflowRuns = response.data.workflow_runs;
-        const matchingWorkflowRuns = workflowRuns.filter(({ head_branch, head_sha }) => head_branch === pullRequest.head.ref && head_sha === pullRequest.head.sha);
-        if (matchingWorkflowRuns.length === 0) {
-            core.warning('No matching workflow runs found.');
-            return [];
-        }
-        const latestWorkflowRuns = PULL_REQUEST_EVENTS.map(event => latestWorkflowRunForEvent(matchingWorkflowRuns, event)).filter(ts_is_present_1.isPresent);
-        core.info(`Found ${latestWorkflowRuns.length} matching workflow runs: ${latestWorkflowRuns
-            .map(r => r.id)
-            .join(', ')}`);
-        return latestWorkflowRuns;
-    });
-}
-function rerunWorkflow(octokit, id) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            core.info(`Re-running workflow run ${id} …`);
-            yield octokit.actions.reRunWorkflow(Object.assign(Object.assign({}, github.context.repo), { run_id: id }));
-            core.info(`Re-run of workflow run ${id} successfully started.`);
-        }
-        catch (err) {
-            core.setFailed(`Re-running workflow run ${id} failed: ${err}`);
-        }
-    });
-}
-function removeLabelFromPullRequest(octokit, pullRequest, label) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const { number, labels } = pullRequest;
-        const currentLabels = labels.map(l => l.name);
-        if (!currentLabels.includes(label)) {
-            return;
-        }
-        try {
-            core.info(`Removing '${label}' label from pull request ${number} …`);
-            yield octokit.issues.removeLabel(Object.assign(Object.assign({}, github.context.repo), { issue_number: number, name: label }));
-        }
-        catch (err) {
-            core.setFailed(`Failed removing '${label}' label from pull request ${number}: ${err}`);
-        }
-    });
-}
+const types_1 = __webpack_require__(8164);
+const helpers_1 = __webpack_require__(5008);
+const input_1 = __webpack_require__(8657);
 function rerunWorkflowsForPullRequest(octokit, input, number, rerunCondition) {
     return __awaiter(this, void 0, void 0, function* () {
         const pullRequest = (yield octokit.pulls.get(Object.assign(Object.assign({}, github.context.repo), { pull_number: number }))).data;
-        const workflowRuns = yield latestWorkflowRunsForPullRequest(octokit, input.workflow, pullRequest);
+        const workflowRuns = yield helpers_1.latestWorkflowRunsForPullRequest(octokit, input.workflow, pullRequest);
         let reruns = 0;
         for (const workflowRun of workflowRuns) {
             switch (workflowRun.status) {
                 case 'queued': {
-                    if (rerunCondition !== RerunCondition.Never) {
+                    if (rerunCondition !== types_1.RerunCondition.Never) {
                         core.info(`Workflow run ${workflowRun.id} is already queued.`);
                     }
                     break;
                 }
                 case 'in_progress': {
-                    if (rerunCondition !== RerunCondition.Never) {
+                    if (rerunCondition !== types_1.RerunCondition.Never) {
                         core.info(`Workflow run ${workflowRun.id} is already re-running.`);
                     }
                     break;
                 }
                 case 'completed': {
                     switch (rerunCondition) {
-                        case RerunCondition.Never: {
+                        case types_1.RerunCondition.Never: {
                             break;
                         }
-                        case RerunCondition.Always: {
-                            rerunWorkflow(octokit, workflowRun.id);
+                        case types_1.RerunCondition.Always: {
+                            helpers_1.rerunWorkflow(octokit, workflowRun.id);
                             reruns += 1;
                             break;
                         }
-                        case RerunCondition.OnFailure: {
+                        case types_1.RerunCondition.OnFailure: {
                             switch (workflowRun.conclusion) {
                                 case 'failure': {
-                                    rerunWorkflow(octokit, workflowRun.id);
+                                    helpers_1.rerunWorkflow(octokit, workflowRun.id);
                                     reruns += 1;
                                     break;
                                 }
@@ -1736,7 +1774,7 @@ function rerunWorkflowsForPullRequest(octokit, input, number, rerunCondition) {
         }
         // Always remove the `onceLabel`.
         if (input.onceLabel) {
-            removeLabelFromPullRequest(octokit, pullRequest, input.onceLabel);
+            helpers_1.removeLabelFromPullRequest(octokit, pullRequest, input.onceLabel);
         }
         // Only try removing the `continuousLabel` if we didn't re-run any workflows this time.
         if (reruns === 0) {
@@ -1751,41 +1789,7 @@ function removeContinuousLabelIfSuccessfulOrCancelled(octokit, workflowRuns, pul
         }
         // If all workflows finished successfully or were cancelled, stop continuously retrying by removing the `continuousLabel`.
         if (workflowRuns.every(w => w.status === 'completed' && (w.conclusion === 'success' || w.conclusion === 'cancelled'))) {
-            removeLabelFromPullRequest(octokit, pullRequest, input.continuousLabel);
-        }
-    });
-}
-function handlePullRequestEvent(octokit, input) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (!github.context.payload.pull_request) {
-            return;
-        }
-        const { action, label, number } = github.context.payload;
-        if ((action === 'labeled' && label.name === input.onceLabel) ||
-            ((action === 'labeled' || action === 'unlabeled') && input.triggerLabels.includes(label.name))) {
-            yield rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.Always);
-        }
-    });
-}
-function handleRepoEvent(octokit, input) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const labels = [input.onceLabel, input.continuousLabel].filter(ts_is_present_1.isPresent);
-        core.info(`Searching for pull requests with ${labels.map(l => `'${l}'`).join(' or ')} labels.`);
-        // We need to get the source code of the query since the `@octokit/graphql`
-        // API doesn't (yet) support passing a `DocumentNode` object.
-        const query = graphql_1.PullRequestsWithLabels.loc.source.body;
-        const result = yield octokit.graphql(Object.assign(Object.assign({ query }, github.context.repo), { labels }));
-        const pullRequests = result.repository.pullRequests.edges.map(pr => ({
-            number: pr.node.number,
-            labels: pr.node.labels.edges.map(l => l.node.name),
-        }));
-        for (const { number, labels } of pullRequests) {
-            if (input.onceLabel && labels.includes(input.onceLabel)) {
-                rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.Always);
-            }
-            else if (input.continuousLabel && labels.includes(input.continuousLabel)) {
-                rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.OnFailure);
-            }
+            helpers_1.removeLabelFromPullRequest(octokit, pullRequest, input.continuousLabel);
         }
     });
 }
@@ -1803,49 +1807,89 @@ function pullRequestsForWorkflowRun(octokit, workflowRun) {
         return pullRequests;
     });
 }
-function handleWorkflowRunEvent(octokit, input) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const { action, workflow_run: workflowRun } = github.context.payload;
-        if (action !== 'completed') {
-            return;
-        }
-        if (!PULL_REQUEST_EVENTS.includes(workflowRun.event)) {
-            return;
-        }
-        if (workflowRun.conclusion === 'success' || workflowRun.conclusion === 'cancelled') {
-            const pullRequests = yield pullRequestsForWorkflowRun(octokit, workflowRun);
-            if (pullRequests.length === 0) {
-                core.warning(`No pull requests found for workflow run ${workflowRun.id}`);
+class RerunWorkflowAction {
+    constructor(input) {
+        this.input = input;
+    }
+    handlePullRequestEvent(octokit) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!github.context.payload.pull_request) {
                 return;
             }
-            else {
-                core.info(`Found ${pullRequests.length} pull requests for workflow run ${workflowRun.id}: ${pullRequests.join(', ')}`);
+            const { action, label, number } = github.context.payload;
+            if ((action === 'labeled' && label.name === this.input.onceLabel) ||
+                ((action === 'labeled' || action === 'unlabeled') && this.input.triggerLabels.includes(label.name))) {
+                yield rerunWorkflowsForPullRequest(octokit, this.input, number, types_1.RerunCondition.Always);
             }
-            for (const number of pullRequests) {
-                rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.Never);
+        });
+    }
+    handleRepoEvent(octokit) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const labels = [this.input.onceLabel, this.input.continuousLabel].filter(ts_is_present_1.isPresent);
+            core.info(`Searching for pull requests with ${labels.map(l => `'${l}'`).join(' or ')} labels.`);
+            // We need to get the source code of the query since the `@octokit/graphql`
+            // API doesn't (yet) support passing a `DocumentNode` object.
+            const query = graphql_1.PullRequestsWithLabels.loc.source.body;
+            const result = yield octokit.graphql(Object.assign(Object.assign({ query }, github.context.repo), { labels }));
+            const pullRequests = result.repository.pullRequests.edges.map(pr => ({
+                number: pr.node.number,
+                labels: pr.node.labels.edges.map(l => l.node.name),
+            }));
+            for (const { number, labels } of pullRequests) {
+                if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {
+                    rerunWorkflowsForPullRequest(octokit, this.input, number, types_1.RerunCondition.Always);
+                }
+                else if (this.input.continuousLabel && labels.includes(this.input.continuousLabel)) {
+                    rerunWorkflowsForPullRequest(octokit, this.input, number, types_1.RerunCondition.OnFailure);
+                }
             }
-        }
-    });
+        });
+    }
+    handleWorkflowRunEvent(octokit) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { action, workflow_run: workflowRun } = github.context.payload;
+            if (action !== 'completed') {
+                return;
+            }
+            if (!helpers_1.PULL_REQUEST_EVENTS.includes(workflowRun.event)) {
+                return;
+            }
+            if (workflowRun.conclusion === 'success' || workflowRun.conclusion === 'cancelled') {
+                const pullRequests = yield pullRequestsForWorkflowRun(octokit, workflowRun);
+                if (pullRequests.length === 0) {
+                    core.warning(`No pull requests found for workflow run ${workflowRun.id}`);
+                    return;
+                }
+                else {
+                    core.info(`Found ${pullRequests.length} pull requests for workflow run ${workflowRun.id}: ${pullRequests.join(', ')}`);
+                }
+                for (const number of pullRequests) {
+                    rerunWorkflowsForPullRequest(octokit, this.input, number, types_1.RerunCondition.Never);
+                }
+            }
+        });
+    }
 }
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const input = input_1.get();
             const octokit = github.getOctokit(input.token);
+            const action = new RerunWorkflowAction(input);
             const eventName = github.context.eventName;
             switch (eventName) {
                 case 'pull_request':
                 case 'pull_request_target': {
-                    yield handlePullRequestEvent(octokit, input);
+                    yield action.handlePullRequestEvent(octokit);
                     break;
                 }
                 case 'schedule':
                 case 'push': {
-                    yield handleRepoEvent(octokit, input);
+                    yield action.handleRepoEvent(octokit);
                     break;
                 }
                 case 'workflow_run': {
-                    yield handleWorkflowRunEvent(octokit, input);
+                    yield action.handleWorkflowRunEvent(octokit);
                     break;
                 }
                 default: {
@@ -1860,6 +1904,26 @@ function run() {
     });
 }
 run();
+
+
+/***/ }),
+
+/***/ 8164:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RerunCondition = void 0;
+var RerunCondition;
+(function (RerunCondition) {
+    // Always re-run unless already queued or in progress.
+    RerunCondition[RerunCondition["Always"] = 0] = "Always";
+    // Re-run only when completed and failed.
+    RerunCondition[RerunCondition["OnFailure"] = 1] = "OnFailure";
+    // Never re-run, only unlabel.
+    RerunCondition[RerunCondition["Never"] = 2] = "Never";
+})(RerunCondition = exports.RerunCondition || (exports.RerunCondition = {}));
 
 
 /***/ }),
