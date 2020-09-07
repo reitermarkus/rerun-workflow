@@ -6,6 +6,11 @@ import { Octokit, PullRequest, WorkflowRun } from './types'
 
 export const PULL_REQUEST_EVENTS = ['pull_request', 'pull_request_target']
 
+export function isSuccessfulOrCancelled(workflowRun: WorkflowRun): boolean {
+  const { status, conclusion } = workflowRun
+  return status === 'completed' && (conclusion === 'success' || conclusion === 'cancelled')
+}
+
 function latestWorkflowRunForEvent(workflowRuns: WorkflowRun[], event: string): WorkflowRun | null {
   return workflowRuns
     .filter(w => w.event === event)
@@ -51,6 +56,34 @@ export async function latestWorkflowRunsForPullRequest(
   )
 
   return latestWorkflowRuns
+}
+
+export async function pullRequestsForWorkflowRun(
+  octokit: Octokit,
+  workflowRun: WorkflowRun
+): Promise<number[]> {
+  let pullRequests = (workflowRun.pull_requests as PullRequest[]).map(({ number }) => number)
+
+  if (pullRequests.length === 0) {
+    const headRepo = workflowRun.head_repository
+    const headBranch = workflowRun.head_branch
+    const headSha = workflowRun.head_sha
+
+    pullRequests = (
+      await octokit.pulls.list({
+        ...github.context.repo,
+        state: 'open',
+        head: `${headRepo.owner.login}:${headBranch}`,
+        sort: 'updated',
+        direction: 'desc',
+        per_page: 100,
+      })
+    ).data
+      .filter(pr => pr.head.sha === headSha)
+      .map(({ number }) => number)
+  }
+
+  return pullRequests
 }
 
 export async function rerunWorkflow(octokit: Octokit, id: number): Promise<void> {
