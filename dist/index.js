@@ -1547,14 +1547,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.get = void 0;
 const core = __importStar(__webpack_require__(2186));
 function get() {
-    const token = core.getInput('token', { required: true }) || null;
+    const token = core.getInput('token', { required: true });
     const onceLabel = core.getInput('once-label') || null;
     const continuousLabel = core.getInput('continuous-label') || null;
     let triggerLabels = core.getInput('trigger-labels').split(',');
     const workflow = core.getInput('workflow', { required: true });
-    if (!token) {
-        throw new Error('A `token` must be specified.');
-    }
     if (!onceLabel && !continuousLabel && !triggerLabels) {
         throw new Error('One of `once-label` or `continous-label` must be specified.');
     }
@@ -1631,10 +1628,10 @@ function latestWorkflowRunForEvent(workflowRuns, event) {
         .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))[0];
 }
 /// Returns the workflow run for the latest commit of a pull request.
-function latestWorkflowRunsForPullRequest(context, octokit, workflow, pullRequest) {
+function latestWorkflowRunsForPullRequest(octokit, workflow, pullRequest) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Searching workflows for pull request ${pullRequest.number} ...`);
-        const response = yield octokit.actions.listWorkflowRuns(Object.assign(Object.assign({}, context.repo), { 
+        const response = yield octokit.actions.listWorkflowRuns(Object.assign(Object.assign({}, github.context.repo), { 
             // Workflow ID can be a string or a number.
             workflow_id: workflow, event: PULL_REQUEST_EVENTS.join(' OR '), branch: pullRequest.head.ref, per_page: 100 }));
         const workflowRuns = response.data.workflow_runs;
@@ -1650,11 +1647,11 @@ function latestWorkflowRunsForPullRequest(context, octokit, workflow, pullReques
         return latestWorkflowRuns;
     });
 }
-function rerunWorkflow(context, octokit, id) {
+function rerunWorkflow(octokit, id) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.info(`Re-running workflow run ${id} …`);
-            yield octokit.actions.reRunWorkflow(Object.assign(Object.assign({}, context.repo), { run_id: id }));
+            yield octokit.actions.reRunWorkflow(Object.assign(Object.assign({}, github.context.repo), { run_id: id }));
             core.info(`Re-run of workflow run ${id} successfully started.`);
         }
         catch (err) {
@@ -1662,7 +1659,7 @@ function rerunWorkflow(context, octokit, id) {
         }
     });
 }
-function removeLabelFromPullRequest(context, octokit, pullRequest, label) {
+function removeLabelFromPullRequest(octokit, pullRequest, label) {
     return __awaiter(this, void 0, void 0, function* () {
         const { number, labels } = pullRequest;
         const currentLabels = labels.map(l => l.name);
@@ -1671,17 +1668,17 @@ function removeLabelFromPullRequest(context, octokit, pullRequest, label) {
         }
         try {
             core.info(`Removing '${label}' label from pull request ${number} …`);
-            yield octokit.issues.removeLabel(Object.assign(Object.assign({}, context.repo), { issue_number: number, name: label }));
+            yield octokit.issues.removeLabel(Object.assign(Object.assign({}, github.context.repo), { issue_number: number, name: label }));
         }
         catch (err) {
             core.setFailed(`Failed removing '${label}' label from pull request ${number}: ${err}`);
         }
     });
 }
-function rerunWorkflowsForPullRequest(context, octokit, input, number, rerunCondition) {
+function rerunWorkflowsForPullRequest(octokit, input, number, rerunCondition) {
     return __awaiter(this, void 0, void 0, function* () {
-        const pullRequest = (yield octokit.pulls.get(Object.assign(Object.assign({}, context.repo), { pull_number: number }))).data;
-        const workflowRuns = yield latestWorkflowRunsForPullRequest(context, octokit, input.workflow, pullRequest);
+        const pullRequest = (yield octokit.pulls.get(Object.assign(Object.assign({}, github.context.repo), { pull_number: number }))).data;
+        const workflowRuns = yield latestWorkflowRunsForPullRequest(octokit, input.workflow, pullRequest);
         let reruns = 0;
         for (const workflowRun of workflowRuns) {
             switch (workflowRun.status) {
@@ -1703,14 +1700,14 @@ function rerunWorkflowsForPullRequest(context, octokit, input, number, rerunCond
                             break;
                         }
                         case RerunCondition.Always: {
-                            rerunWorkflow(context, octokit, workflowRun.id);
+                            rerunWorkflow(octokit, workflowRun.id);
                             reruns += 1;
                             break;
                         }
                         case RerunCondition.OnFailure: {
                             switch (workflowRun.conclusion) {
                                 case 'failure': {
-                                    rerunWorkflow(context, octokit, workflowRun.id);
+                                    rerunWorkflow(octokit, workflowRun.id);
                                     reruns += 1;
                                     break;
                                 }
@@ -1739,75 +1736,76 @@ function rerunWorkflowsForPullRequest(context, octokit, input, number, rerunCond
         }
         // Always remove the `onceLabel`.
         if (input.onceLabel) {
-            removeLabelFromPullRequest(context, octokit, pullRequest, input.onceLabel);
+            removeLabelFromPullRequest(octokit, pullRequest, input.onceLabel);
         }
         // Only try removing the `continuousLabel` if we didn't re-run any workflows this time.
         if (reruns === 0) {
-            removeContinuousLabelIfSuccessfulOrCancelled(context, octokit, workflowRuns, pullRequest, input);
+            removeContinuousLabelIfSuccessfulOrCancelled(octokit, workflowRuns, pullRequest, input);
         }
     });
 }
-function removeContinuousLabelIfSuccessfulOrCancelled(context, octokit, workflowRuns, pullRequest, input) {
+function removeContinuousLabelIfSuccessfulOrCancelled(octokit, workflowRuns, pullRequest, input) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!input.continuousLabel) {
             return;
         }
         // If all workflows finished successfully or were cancelled, stop continuously retrying by removing the `continuousLabel`.
         if (workflowRuns.every(w => w.status === 'completed' && (w.conclusion === 'success' || w.conclusion === 'cancelled'))) {
-            removeLabelFromPullRequest(context, octokit, pullRequest, input.continuousLabel);
+            removeLabelFromPullRequest(octokit, pullRequest, input.continuousLabel);
         }
     });
 }
-function handlePullRequestEvent(context, octokit, input) {
+function handlePullRequestEvent(octokit, input) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!context.payload.pull_request) {
+        if (!github.context.payload.pull_request) {
             return;
         }
-        const { action, label, number } = context.payload;
-        if ((action === 'labeled' && label.name === input.onceLabel) || ((action === 'labeled' || action === 'unlabeled') && input.triggerLabels.includes(label.name))) {
-            yield rerunWorkflowsForPullRequest(context, octokit, input, number, RerunCondition.Always);
+        const { action, label, number } = github.context.payload;
+        if ((action === 'labeled' && label.name === input.onceLabel) ||
+            ((action === 'labeled' || action === 'unlabeled') && input.triggerLabels.includes(label.name))) {
+            yield rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.Always);
         }
     });
 }
-function handleRepoEvent(context, octokit, input) {
+function handleRepoEvent(octokit, input) {
     return __awaiter(this, void 0, void 0, function* () {
         const labels = [input.onceLabel, input.continuousLabel].filter(ts_is_present_1.isPresent);
         core.info(`Searching for pull requests with ${labels.map(l => `'${l}'`).join(' or ')} labels.`);
         // We need to get the source code of the query since the `@octokit/graphql`
         // API doesn't (yet) support passing a `DocumentNode` object.
         const query = graphql_1.PullRequestsWithLabels.loc.source.body;
-        const result = yield octokit.graphql(Object.assign(Object.assign({ query }, context.repo), { labels }));
+        const result = yield octokit.graphql(Object.assign(Object.assign({ query }, github.context.repo), { labels }));
         const pullRequests = result.repository.pullRequests.edges.map(pr => ({
             number: pr.node.number,
             labels: pr.node.labels.edges.map(l => l.node.name),
         }));
         for (const { number, labels } of pullRequests) {
             if (input.onceLabel && labels.includes(input.onceLabel)) {
-                rerunWorkflowsForPullRequest(context, octokit, input, number, RerunCondition.Always);
+                rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.Always);
             }
             else if (input.continuousLabel && labels.includes(input.continuousLabel)) {
-                rerunWorkflowsForPullRequest(context, octokit, input, number, RerunCondition.OnFailure);
+                rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.OnFailure);
             }
         }
     });
 }
-function pullRequestsForWorkflowRun(context, octokit, workflowRun) {
+function pullRequestsForWorkflowRun(octokit, workflowRun) {
     return __awaiter(this, void 0, void 0, function* () {
         let pullRequests = workflowRun.pull_requests.map(({ number }) => number);
         if (pullRequests.length === 0) {
             const headRepo = workflowRun.head_repository;
             const headBranch = workflowRun.head_branch;
             const headSha = workflowRun.head_sha;
-            pullRequests = (yield octokit.pulls.list(Object.assign(Object.assign({}, context.repo), { state: 'open', head: `${headRepo.owner.login}:${headBranch}`, sort: 'updated', direction: 'desc', per_page: 100 }))).data
+            pullRequests = (yield octokit.pulls.list(Object.assign(Object.assign({}, github.context.repo), { state: 'open', head: `${headRepo.owner.login}:${headBranch}`, sort: 'updated', direction: 'desc', per_page: 100 }))).data
                 .filter(pr => pr.head.sha === headSha)
                 .map(({ number }) => number);
         }
         return pullRequests;
     });
 }
-function handleWorkflowRunEvent(context, octokit, input) {
+function handleWorkflowRunEvent(octokit, input) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { action, workflow_run: workflowRun } = context.payload;
+        const { action, workflow_run: workflowRun } = github.context.payload;
         if (action !== 'completed') {
             return;
         }
@@ -1815,7 +1813,7 @@ function handleWorkflowRunEvent(context, octokit, input) {
             return;
         }
         if (workflowRun.conclusion === 'success' || workflowRun.conclusion === 'cancelled') {
-            const pullRequests = yield pullRequestsForWorkflowRun(context, octokit, workflowRun);
+            const pullRequests = yield pullRequestsForWorkflowRun(octokit, workflowRun);
             if (pullRequests.length === 0) {
                 core.warning(`No pull requests found for workflow run ${workflowRun.id}`);
                 return;
@@ -1824,7 +1822,7 @@ function handleWorkflowRunEvent(context, octokit, input) {
                 core.info(`Found ${pullRequests.length} pull requests for workflow run ${workflowRun.id}: ${pullRequests.join(', ')}`);
             }
             for (const number of pullRequests) {
-                rerunWorkflowsForPullRequest(context, octokit, input, number, RerunCondition.Never);
+                rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.Never);
             }
         }
     });
@@ -1832,33 +1830,26 @@ function handleWorkflowRunEvent(context, octokit, input) {
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const { context } = github;
-            let input;
-            try {
-                input = input_1.get();
-            }
-            catch (err) {
-                core.setFailed(`Input error: ${err}`);
-                return;
-            }
+            const input = input_1.get();
             const octokit = github.getOctokit(input.token);
-            switch (context.eventName) {
+            const eventName = github.context.eventName;
+            switch (eventName) {
                 case 'pull_request':
                 case 'pull_request_target': {
-                    yield handlePullRequestEvent(context, octokit, input);
+                    yield handlePullRequestEvent(octokit, input);
                     break;
                 }
                 case 'schedule':
                 case 'push': {
-                    yield handleRepoEvent(context, octokit, input);
+                    yield handleRepoEvent(octokit, input);
                     break;
                 }
                 case 'workflow_run': {
-                    yield handleWorkflowRunEvent(context, octokit, input);
+                    yield handleWorkflowRunEvent(octokit, input);
                     break;
                 }
                 default: {
-                    core.warning(`This action does not support the '${context.eventName}' event.`);
+                    core.warning(`This action does not support the '${eventName}' event.`);
                     break;
                 }
             }

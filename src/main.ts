@@ -33,7 +33,6 @@ function latestWorkflowRunForEvent(workflowRuns: WorkflowRun[], event: string): 
 
 /// Returns the workflow run for the latest commit of a pull request.
 async function latestWorkflowRunsForPullRequest(
-  context: Context,
   octokit: Octokit,
   workflow: string,
   pullRequest: PullRequest
@@ -41,7 +40,7 @@ async function latestWorkflowRunsForPullRequest(
   core.info(`Searching workflows for pull request ${pullRequest.number} ...`)
 
   const response = await octokit.actions.listWorkflowRuns({
-    ...context.repo,
+    ...github.context.repo,
     // Workflow ID can be a string or a number.
     workflow_id: workflow as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     event: PULL_REQUEST_EVENTS.join(' OR '),
@@ -73,11 +72,11 @@ async function latestWorkflowRunsForPullRequest(
   return latestWorkflowRuns
 }
 
-async function rerunWorkflow(context: Context, octokit: Octokit, id: number): Promise<void> {
+async function rerunWorkflow(octokit: Octokit, id: number): Promise<void> {
   try {
     core.info(`Re-running workflow run ${id} …`)
     await octokit.actions.reRunWorkflow({
-      ...context.repo,
+      ...github.context.repo,
       run_id: id,
     })
     core.info(`Re-run of workflow run ${id} successfully started.`)
@@ -86,12 +85,7 @@ async function rerunWorkflow(context: Context, octokit: Octokit, id: number): Pr
   }
 }
 
-async function removeLabelFromPullRequest(
-  context: Context,
-  octokit: Octokit,
-  pullRequest: PullRequest,
-  label: string
-) {
+async function removeLabelFromPullRequest(octokit: Octokit, pullRequest: PullRequest, label: string) {
   const { number, labels } = pullRequest
 
   const currentLabels = labels.map(l => l.name)
@@ -103,7 +97,7 @@ async function removeLabelFromPullRequest(
   try {
     core.info(`Removing '${label}' label from pull request ${number} …`)
     await octokit.issues.removeLabel({
-      ...context.repo,
+      ...github.context.repo,
       issue_number: number,
       name: label,
     })
@@ -113,15 +107,14 @@ async function removeLabelFromPullRequest(
 }
 
 async function rerunWorkflowsForPullRequest(
-  context: Context,
   octokit: Octokit,
   input: Input,
   number: number,
   rerunCondition: RerunCondition
 ): Promise<void> {
-  const pullRequest = (await octokit.pulls.get({ ...context.repo, pull_number: number })).data
+  const pullRequest = (await octokit.pulls.get({ ...github.context.repo, pull_number: number })).data
 
-  const workflowRuns = await latestWorkflowRunsForPullRequest(context, octokit, input.workflow, pullRequest)
+  const workflowRuns = await latestWorkflowRunsForPullRequest(octokit, input.workflow, pullRequest)
 
   let reruns = 0
 
@@ -145,14 +138,14 @@ async function rerunWorkflowsForPullRequest(
             break
           }
           case RerunCondition.Always: {
-            rerunWorkflow(context, octokit, workflowRun.id)
+            rerunWorkflow(octokit, workflowRun.id)
             reruns += 1
             break
           }
           case RerunCondition.OnFailure: {
             switch (workflowRun.conclusion) {
               case 'failure': {
-                rerunWorkflow(context, octokit, workflowRun.id)
+                rerunWorkflow(octokit, workflowRun.id)
                 reruns += 1
                 break
               }
@@ -184,17 +177,16 @@ async function rerunWorkflowsForPullRequest(
 
   // Always remove the `onceLabel`.
   if (input.onceLabel) {
-    removeLabelFromPullRequest(context, octokit, pullRequest, input.onceLabel)
+    removeLabelFromPullRequest(octokit, pullRequest, input.onceLabel)
   }
 
   // Only try removing the `continuousLabel` if we didn't re-run any workflows this time.
   if (reruns === 0) {
-    removeContinuousLabelIfSuccessfulOrCancelled(context, octokit, workflowRuns, pullRequest, input)
+    removeContinuousLabelIfSuccessfulOrCancelled(octokit, workflowRuns, pullRequest, input)
   }
 }
 
 async function removeContinuousLabelIfSuccessfulOrCancelled(
-  context: Context,
   octokit: Octokit,
   workflowRuns: WorkflowRun[],
   pullRequest: PullRequest,
@@ -210,26 +202,26 @@ async function removeContinuousLabelIfSuccessfulOrCancelled(
       w => w.status === 'completed' && (w.conclusion === 'success' || w.conclusion === 'cancelled')
     )
   ) {
-    removeLabelFromPullRequest(context, octokit, pullRequest, input.continuousLabel)
+    removeLabelFromPullRequest(octokit, pullRequest, input.continuousLabel)
   }
 }
 
-async function handlePullRequestEvent(context: Context, octokit: Octokit, input: Input): Promise<void> {
-  if (!context.payload.pull_request) {
+async function handlePullRequestEvent(octokit: Octokit, input: Input): Promise<void> {
+  if (!github.context.payload.pull_request) {
     return
   }
 
-  const { action, label, number } = context.payload
+  const { action, label, number } = github.context.payload
 
   if (
     (action === 'labeled' && label.name === input.onceLabel) ||
     ((action === 'labeled' || action === 'unlabeled') && input.triggerLabels.includes(label.name))
   ) {
-    await rerunWorkflowsForPullRequest(context, octokit, input, number, RerunCondition.Always)
+    await rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.Always)
   }
 }
 
-async function handleRepoEvent(context: Context, octokit: Octokit, input: Input): Promise<void> {
+async function handleRepoEvent(octokit: Octokit, input: Input): Promise<void> {
   const labels: string[] = [input.onceLabel, input.continuousLabel].filter(isPresent)
 
   core.info(`Searching for pull requests with ${labels.map(l => `'${l}'`).join(' or ')} labels.`)
@@ -240,7 +232,7 @@ async function handleRepoEvent(context: Context, octokit: Octokit, input: Input)
 
   const result: PullRequestsWithLabelsQuery = await octokit.graphql({
     query,
-    ...context.repo,
+    ...github.context.repo,
     labels,
   })
 
@@ -251,18 +243,14 @@ async function handleRepoEvent(context: Context, octokit: Octokit, input: Input)
 
   for (const { number, labels } of pullRequests) {
     if (input.onceLabel && labels.includes(input.onceLabel)) {
-      rerunWorkflowsForPullRequest(context, octokit, input, number, RerunCondition.Always)
+      rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.Always)
     } else if (input.continuousLabel && labels.includes(input.continuousLabel)) {
-      rerunWorkflowsForPullRequest(context, octokit, input, number, RerunCondition.OnFailure)
+      rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.OnFailure)
     }
   }
 }
 
-async function pullRequestsForWorkflowRun(
-  context: Context,
-  octokit: Octokit,
-  workflowRun: WorkflowRun
-): Promise<number[]> {
+async function pullRequestsForWorkflowRun(octokit: Octokit, workflowRun: WorkflowRun): Promise<number[]> {
   let pullRequests = (workflowRun.pull_requests as PullRequest[]).map(({ number }) => number)
 
   if (pullRequests.length === 0) {
@@ -272,7 +260,7 @@ async function pullRequestsForWorkflowRun(
 
     pullRequests = (
       await octokit.pulls.list({
-        ...context.repo,
+        ...github.context.repo,
         state: 'open',
         head: `${headRepo.owner.login}:${headBranch}`,
         sort: 'updated',
@@ -287,8 +275,8 @@ async function pullRequestsForWorkflowRun(
   return pullRequests
 }
 
-async function handleWorkflowRunEvent(context: Context, octokit: Octokit, input: Input): Promise<void> {
-  const { action, workflow_run: workflowRun } = context.payload
+async function handleWorkflowRunEvent(octokit: Octokit, input: Input): Promise<void> {
+  const { action, workflow_run: workflowRun } = github.context.payload
 
   if (action !== 'completed') {
     return
@@ -299,7 +287,7 @@ async function handleWorkflowRunEvent(context: Context, octokit: Octokit, input:
   }
 
   if (workflowRun.conclusion === 'success' || workflowRun.conclusion === 'cancelled') {
-    const pullRequests = await pullRequestsForWorkflowRun(context, octokit, workflowRun)
+    const pullRequests = await pullRequestsForWorkflowRun(octokit, workflowRun)
 
     if (pullRequests.length === 0) {
       core.warning(`No pull requests found for workflow run ${workflowRun.id}`)
@@ -313,43 +301,35 @@ async function handleWorkflowRunEvent(context: Context, octokit: Octokit, input:
     }
 
     for (const number of pullRequests) {
-      rerunWorkflowsForPullRequest(context, octokit, input, number, RerunCondition.Never)
+      rerunWorkflowsForPullRequest(octokit, input, number, RerunCondition.Never)
     }
   }
 }
 
 async function run(): Promise<void> {
   try {
-    const { context } = github
-
-    let input
-
-    try {
-      input = getInput()
-    } catch (err) {
-      core.setFailed(`Input error: ${err}`)
-      return
-    }
+    const input = getInput()
 
     const octokit = github.getOctokit(input.token)
 
-    switch (context.eventName) {
+    const eventName = github.context.eventName
+    switch (eventName) {
       case 'pull_request':
       case 'pull_request_target': {
-        await handlePullRequestEvent(context, octokit, input)
+        await handlePullRequestEvent(octokit, input)
         break
       }
       case 'schedule':
       case 'push': {
-        await handleRepoEvent(context, octokit, input)
+        await handleRepoEvent(octokit, input)
         break
       }
       case 'workflow_run': {
-        await handleWorkflowRunEvent(context, octokit, input)
+        await handleWorkflowRunEvent(octokit, input)
         break
       }
       default: {
-        core.warning(`This action does not support the '${context.eventName}' event.`)
+        core.warning(`This action does not support the '${eventName}' event.`)
         break
       }
     }

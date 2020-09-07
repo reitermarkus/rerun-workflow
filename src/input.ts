@@ -9,15 +9,11 @@ export interface Input {
 }
 
 export function get(): Input {
-  const token = core.getInput('token', { required: true }) || null
+  const token = core.getInput('token', { required: true })
   const onceLabel = core.getInput('once-label') || null
   const continuousLabel = core.getInput('continuous-label') || null
   let triggerLabels = core.getInput('trigger-labels').split(',')
   const workflow = core.getInput('workflow', { required: true })
-
-  if (!token) {
-    throw new Error('A `token` must be specified.')
-  }
 
   if (!onceLabel && !continuousLabel && !triggerLabels) {
     throw new Error('One of `once-label` or `continous-label` must be specified.')
