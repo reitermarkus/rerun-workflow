@@ -1585,13 +1585,11 @@ function latestWorkflowRunsForPullRequest(octokit, workflow, pullRequest) {
         const workflowRuns = response.data.workflow_runs;
         const matchingWorkflowRuns = workflowRuns.filter(({ head_branch, head_sha }) => head_branch === pullRequest.head.ref && head_sha === pullRequest.head.sha);
         if (matchingWorkflowRuns.length === 0) {
-            core.warning('No matching workflow runs found.');
+            core.warning(`No matching workflow runs found for pull request ${pullRequest.number}.`);
             return [];
         }
         const latestWorkflowRuns = exports.PULL_REQUEST_EVENTS.map(event => latestWorkflowRunForEvent(matchingWorkflowRuns, event)).filter(ts_is_present_1.isPresent);
-        core.info(`Found ${latestWorkflowRuns.length} matching workflow runs: ${latestWorkflowRuns
-            .map(r => r.id)
-            .join(', ')}`);
+        core.info(`Found ${latestWorkflowRuns.length} matching workflow runs for pull request ${pullRequest.number}: ${latestWorkflowRuns.map(r => r.id).join(', ')}`);
         return latestWorkflowRuns;
     });
 }
@@ -1614,7 +1612,7 @@ exports.pullRequestsForWorkflowRun = pullRequestsForWorkflowRun;
 function rerunWorkflow(octokit, id) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.info(`Re-running workflow run ${id} …`);
+            core.info(`Triggering re-run for workflow run ${id}…`);
             yield octokit.actions.reRunWorkflow(Object.assign(Object.assign({}, github.context.repo), { run_id: id }));
             core.info(`Re-run of workflow run ${id} successfully started.`);
         }
@@ -1632,7 +1630,7 @@ function removeLabelFromPullRequest(octokit, pullRequest, label) {
             return;
         }
         try {
-            core.info(`Removing '${label}' label from pull request ${number} …`);
+            core.info(`Removing '${label}' label from pull request ${number}…`);
             yield octokit.issues.removeLabel(Object.assign(Object.assign({}, github.context.repo), { issue_number: number, name: label }));
         }
         catch (err) {

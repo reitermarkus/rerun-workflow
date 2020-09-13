@@ -46,7 +46,7 @@ export async function latestWorkflowRunsForPullRequest(
   )
 
   if (matchingWorkflowRuns.length === 0) {
-    core.warning('No matching workflow runs found.')
+    core.warning(`No matching workflow runs found for pull request ${pullRequest.number}.`)
     return []
   }
 
@@ -55,9 +55,9 @@ export async function latestWorkflowRunsForPullRequest(
   ).filter(isPresent)
 
   core.info(
-    `Found ${latestWorkflowRuns.length} matching workflow runs: ${latestWorkflowRuns
-      .map(r => r.id)
-      .join(', ')}`
+    `Found ${latestWorkflowRuns.length} matching workflow runs for pull request ${
+      pullRequest.number
+    }: ${latestWorkflowRuns.map(r => r.id).join(', ')}`
   )
 
   return latestWorkflowRuns
@@ -93,7 +93,7 @@ export async function pullRequestsForWorkflowRun(
 
 export async function rerunWorkflow(octokit: Octokit, id: number): Promise<void> {
   try {
-    core.info(`Re-running workflow run ${id} …`)
+    core.info(`Triggering re-run for workflow run ${id}…`)
     await octokit.actions.reRunWorkflow({
       ...github.context.repo,
       run_id: id,
@@ -114,7 +114,7 @@ export async function removeLabelFromPullRequest(octokit: Octokit, pullRequest: 
   }
 
   try {
-    core.info(`Removing '${label}' label from pull request ${number} …`)
+    core.info(`Removing '${label}' label from pull request ${number}…`)
     await octokit.issues.removeLabel({
       ...github.context.repo,
       issue_number: number,
