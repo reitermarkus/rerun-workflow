@@ -1915,8 +1915,9 @@ function run() {
                     yield action.handlePullRequestEvent(octokit);
                     break;
                 }
+                case 'push':
                 case 'schedule':
-                case 'push': {
+                case 'workflow_dispatch': {
                     yield action.handleRepoEvent(octokit);
                     break;
                 }

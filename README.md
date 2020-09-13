@@ -45,6 +45,10 @@ on:
       - labeled
       - unlabeled
 
+  # Check open pull requests for relevant labels and re-run the
+  # corresponding workflows if necessary.
+  workflow_dispatch:
+
   # Remove relevant labels when a workflow run finishes successfully.
   workflow_run:
     workflows:

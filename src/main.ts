@@ -232,8 +232,9 @@ async function run(): Promise<void> {
         await action.handlePullRequestEvent(octokit)
         break
       }
+      case 'push':
       case 'schedule':
-      case 'push': {
+      case 'workflow_dispatch': {
         await action.handleRepoEvent(octokit)
         break
       }
