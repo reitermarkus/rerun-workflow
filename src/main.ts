@@ -167,13 +167,15 @@ class RerunWorkflowAction {
       labels: pr!.node!.labels!.edges!.map(l => l!.node!.name),
     }))
 
-    for (const { number, labels } of pullRequests) {
-      if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {
-        await this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.Always)
-      } else if (this.input.continuousLabel && labels.includes(this.input.continuousLabel)) {
-        await this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.OnFailure)
-      }
-    }
+    await Promise.all(
+      pullRequests.map(({ number, labels }) => async () => {
+        if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {
+          await this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.Always)
+        } else if (this.input.continuousLabel && labels.includes(this.input.continuousLabel)) {
+          await this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.OnFailure)
+        }
+      })
+    )
   }
 
   async handleWorkflowRunEvent(octokit: Octokit): Promise<void> {
@@ -201,9 +203,9 @@ class RerunWorkflowAction {
         )
       }
 
-      for (const number of pullRequests) {
-        await this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.Never)
-      }
+      await Promise.all(
+        pullRequests.map(number => this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.Never))
+      )
     }
   }
 }

@@ -1864,14 +1864,14 @@ class RerunWorkflowAction {
                 number: pr.node.number,
                 labels: pr.node.labels.edges.map(l => l.node.name),
             }));
-            for (const { number, labels } of pullRequests) {
+            yield Promise.all(pullRequests.map(({ number, labels }) => () => __awaiter(this, void 0, void 0, function* () {
                 if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {
                     yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Always);
                 }
                 else if (this.input.continuousLabel && labels.includes(this.input.continuousLabel)) {
                     yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.OnFailure);
                 }
-            }
+            })));
         });
     }
     handleWorkflowRunEvent(octokit) {
@@ -1892,9 +1892,7 @@ class RerunWorkflowAction {
                 else {
                     core.info(`Found ${pullRequests.length} pull requests for workflow run ${workflowRun.id}: ${pullRequests.join(', ')}`);
                 }
-                for (const number of pullRequests) {
-                    yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Never);
-                }
+                yield Promise.all(pullRequests.map(number => this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Never)));
             }
         });
     }
