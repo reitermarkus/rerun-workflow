@@ -27,18 +27,30 @@ This action allows re-running a workflow when labels are added to (or removed fr
 name: Re-run Workflow
 
 on:
-  workflow_run:
-    workflows:
-      - CI
-    types:
-      - completed
+  # Check open pull requests for relevant labels and re-run the
+  # corresponding workflows if necessary.
+  # (Only recommended for testing.)
+  push:
+
+  # Check open pull requests for relevant labels and re-run the
+  # corresponding workflows if necessary.
+  schedule:
+    - cron: '*/30 * * * *'
+
+  # Remove relevant labels when a pull request is closed or trigger
+  # a re-run when a relevant labels ia added or removed.
   pull_request_target:
     types:
       - closed
       - labeled
       - unlabeled
-  schedule:
-    - cron: '*/30 * * * *'
+
+  # Remove relevant labels when a workflow run finishes successfully.
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
 
 jobs:
   rerun-workflow:
