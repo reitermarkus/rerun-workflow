@@ -1,19 +1,18 @@
 name: Re-run Workflow
 
 on:
-  workflow_run:
-    workflows:
-      - Pull Request Fail
-    types:
-      - completed
+  schedule:
+    - cron: '*/30 * * * *'
   pull_request_target:
     types:
       - closed
       - labeled
       - unlabeled
-  push:
-  schedule:
-    - cron: '*/30 * * * *'
+  workflow_run:
+    workflows:
+      - Pull Request Fail
+    types:
+      - completed
 
 jobs:
   rerun-workflow:
