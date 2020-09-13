@@ -3,6 +3,9 @@ description: >
   Re-run a workflow once or continuously until it succeeds by applying
   (or removing) labels to a pull request.
 author: reitermarkus
+branding:
+  icon: repeat
+  color: blue
 
 inputs:
   token:
