@@ -1869,14 +1869,14 @@ class RerunWorkflowAction {
                 core.info(`No pull requests found.`);
                 return;
             }
-            yield Promise.all(pullRequests.map(({ number, labels }) => () => __awaiter(this, void 0, void 0, function* () {
+            yield Promise.all(pullRequests.map(({ number, labels }) => new Promise(() => __awaiter(this, void 0, void 0, function* () {
                 if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {
                     yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Always);
                 }
                 else if (this.input.continuousLabel && labels.includes(this.input.continuousLabel)) {
                     yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.OnFailure);
                 }
-            })));
+            }))));
         });
     }
     handleWorkflowRunEvent(octokit) {
