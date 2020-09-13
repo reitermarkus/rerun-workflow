@@ -167,6 +167,13 @@ class RerunWorkflowAction {
       labels: pr!.node!.labels!.edges!.map(l => l!.node!.name),
     }))
 
+    if (pullRequests.length) {
+      core.info(`Found ${pullRequests.length} pull requests with matching labels.`)
+    } else {
+      core.info(`No pull requests found.`)
+      return
+    }
+
     await Promise.all(
       pullRequests.map(({ number, labels }) => async () => {
         if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {

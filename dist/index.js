@@ -1862,6 +1862,13 @@ class RerunWorkflowAction {
                 number: pr.node.number,
                 labels: pr.node.labels.edges.map(l => l.node.name),
             }));
+            if (pullRequests.length) {
+                core.info(`Found ${pullRequests.length} pull requests with matching labels.`);
+            }
+            else {
+                core.info(`No pull requests found.`);
+                return;
+            }
             yield Promise.all(pullRequests.map(({ number, labels }) => () => __awaiter(this, void 0, void 0, function* () {
                 if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {
                     yield this.rerunWorkflowsForPullRequest(octokit, number, types_1.RerunCondition.Always);
