@@ -1578,7 +1578,7 @@ function latestWorkflowRunForEvent(workflowRuns, event) {
 /// Returns the workflow run for the latest commit of a pull request.
 function latestWorkflowRunsForPullRequest(octokit, workflow, pullRequest) {
     return __awaiter(this, void 0, void 0, function* () {
-        core.info(`Searching workflows for pull request ${pullRequest.number} ...`);
+        core.info(`Searching workflows for pull request ${pullRequest.number}…`);
         const response = yield octokit.actions.listWorkflowRuns(Object.assign(Object.assign({}, github.context.repo), { 
             // Workflow ID can be a string or a number.
             workflow_id: workflow, event: exports.PULL_REQUEST_EVENTS.join(' OR '), branch: pullRequest.head.ref, per_page: 100 }));

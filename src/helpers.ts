@@ -28,7 +28,7 @@ export async function latestWorkflowRunsForPullRequest(
   workflow: string,
   pullRequest: PullRequest
 ): Promise<WorkflowRun[]> {
-  core.info(`Searching workflows for pull request ${pullRequest.number} ...`)
+  core.info(`Searching workflows for pull request ${pullRequest.number}…`)
 
   const response = await octokit.actions.listWorkflowRuns({
     ...github.context.repo,
