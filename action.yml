@@ -1,6 +1,8 @@
-name: 'Re-run a Workflow'
-description: 'Re-run a workflow once or continuously until it succeeds.'
-author: 'reitermarkus'
+name: Re-run Workflow
+description: >
+  Re-run a workflow once or continuously until it succeeds by applying
+  (or removing) labels to a pull request.
+author: reitermarkus
 
 inputs:
   token:
