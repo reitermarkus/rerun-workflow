@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/reitermarkus/rerun-workflow/actions"><img alt="typescript-action status" src="https://github.com/actions/reitermarkus/rerun-workflow/build-test/badge.svg"></a>
+  <a href="https://github.com/reitermarkus/rerun-workflow/actions"><img alt="rerun-workflow build-test status" src="https://github.com/reitermarkus/rerun-workflow/workflows/build-test/badge.svg"></a>
 </p>
 
 
