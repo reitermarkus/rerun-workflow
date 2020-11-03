@@ -1560,7 +1560,12 @@ var UserStatusOrderField;
 exports.PullRequestsWithLabels = graphql_tag_1.default `
     query PullRequestsWithLabels($owner: String!, $repo: String!, $labels: [String!]) {
   repository(owner: $owner, name: $repo) {
-    pullRequests(labels: $labels, states: OPEN, first: 100, orderBy: {field: UPDATED_AT, direction: DESC}) {
+    pullRequests(
+      labels: $labels
+      states: OPEN
+      first: 100
+      orderBy: {field: UPDATED_AT, direction: DESC}
+    ) {
       edges {
         node {
           number
@@ -9310,7 +9315,7 @@ var GraphQLError = /*#__PURE__*/function (_Error) {
     value: function toString() {
       return printError(this);
     } // FIXME: workaround to not break chai comparisons, should be remove in v16
-    // $FlowFixMe Flow doesn't support computed properties yet
+    // $FlowFixMe[unsupported-syntax] Flow doesn't support computed properties yet
 
   }, {
     key: _symbols.SYMBOL_TO_STRING_TAG,
@@ -9488,7 +9493,6 @@ function formatObjectValue(value, previouslySeenValues) {
   var customInspectFn = getCustomFn(value);
 
   if (customInspectFn !== undefined) {
-    // $FlowFixMe(>=0.90.0)
     var customValue = customInspectFn.call(value); // check for infinite recursion
 
     if (customValue !== value) {
@@ -9570,6 +9574,50 @@ function getObjectTag(object) {
 
   return tag;
 }
+
+
+/***/ }),
+
+/***/ 3481:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true
+}));
+exports.default = void 0;
+
+/**
+ * A replacement for instanceof which includes an error warning when multi-realm
+ * constructors are detected.
+ */
+// See: https://expressjs.com/en/advanced/best-practice-performance.html#set-node_env-to-production
+// See: https://webpack.js.org/guides/production/
+var _default = process.env.NODE_ENV === 'production' ? // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
+// eslint-disable-next-line no-shadow
+function instanceOf(value, constructor) {
+  return value instanceof constructor;
+} : // eslint-disable-next-line no-shadow
+function instanceOf(value, constructor) {
+  if (value instanceof constructor) {
+    return true;
+  }
+
+  if (value) {
+    var valueClass = value.constructor;
+    var className = constructor.name;
+
+    if (className && valueClass && valueClass.name === className) {
+      throw new Error("Cannot use ".concat(className, " \"").concat(value, "\" from another module or realm.\n\nEnsure that there is only one instance of \"graphql\" in the node_modules\ndirectory. If different versions of \"graphql\" are the dependencies of other\nrelied on modules, use \"resolutions\" to ensure only one version is installed.\n\nhttps://yarnpkg.com/en/docs/selective-version-resolutions\n\nDuplicate \"graphql\" modules cannot be used at the same time since different\nversions may have different capabilities and behavior. The data from one\nversion used in the function from another could produce confusing and\nspurious results."));
+    }
+  }
+
+  return false;
+};
+
+exports.default = _default;
 
 
 /***/ }),
@@ -9803,7 +9851,7 @@ function dedentBlockStringValue(rawString) {
   // Expand a block string's raw value into independent lines.
   var lines = rawString.split(/\r\n|[\n\r]/g); // Remove common indentation from all lines but first.
 
-  var commonIndent = getBlockStringIndentation(lines);
+  var commonIndent = getBlockStringIndentation(rawString);
 
   if (commonIndent !== 0) {
     for (var i = 1; i < lines.length; i++) {
@@ -9812,57 +9860,78 @@ function dedentBlockStringValue(rawString) {
   } // Remove leading and trailing blank lines.
 
 
-  while (lines.length > 0 && isBlank(lines[0])) {
-    lines.shift();
+  var startLine = 0;
+
+  while (startLine < lines.length && isBlank(lines[startLine])) {
+    ++startLine;
   }
 
-  while (lines.length > 0 && isBlank(lines[lines.length - 1])) {
-    lines.pop();
+  var endLine = lines.length;
+
+  while (endLine > startLine && isBlank(lines[endLine - 1])) {
+    --endLine;
   } // Return a string of the lines joined with U+000A.
 
 
-  return lines.join('\n');
+  return lines.slice(startLine, endLine).join('\n');
+}
+
+function isBlank(str) {
+  for (var i = 0; i < str.length; ++i) {
+    if (str[i] !== ' ' && str[i] !== '\t') {
+      return false;
+    }
+  }
+
+  return true;
 }
 /**
  * @internal
  */
 
 
-function getBlockStringIndentation(lines) {
+function getBlockStringIndentation(value) {
+  var _commonIndent;
+
+  var isFirstLine = true;
+  var isEmptyLine = true;
+  var indent = 0;
   var commonIndent = null;
 
-  for (var i = 1; i < lines.length; i++) {
-    var line = lines[i];
-    var indent = leadingWhitespace(line);
+  for (var i = 0; i < value.length; ++i) {
+    switch (value.charCodeAt(i)) {
+      case 13:
+        //  \r
+        if (value.charCodeAt(i + 1) === 10) {
+          ++i; // skip \r\n as one symbol
+        }
 
-    if (indent === line.length) {
-      continue; // skip empty lines
-    }
+      // falls through
 
-    if (commonIndent === null || indent < commonIndent) {
-      commonIndent = indent;
-
-      if (commonIndent === 0) {
+      case 10:
+        //  \n
+        isFirstLine = false;
+        isEmptyLine = true;
+        indent = 0;
         break;
-      }
+
+      case 9: //   \t
+
+      case 32:
+        //  <space>
+        ++indent;
+        break;
+
+      default:
+        if (isEmptyLine && !isFirstLine && (commonIndent === null || indent < commonIndent)) {
+          commonIndent = indent;
+        }
+
+        isEmptyLine = false;
     }
   }
 
-  return commonIndent === null ? 0 : commonIndent;
-}
-
-function leadingWhitespace(str) {
-  var i = 0;
-
-  while (i < str.length && (str[i] === ' ' || str[i] === '\t')) {
-    i++;
-  }
-
-  return i;
-}
-
-function isBlank(str) {
-  return leadingWhitespace(str) === str.length;
+  return (_commonIndent = commonIndent) !== null && _commonIndent !== void 0 ? _commonIndent : 0;
 }
 /**
  * Print a block string in the indented block form by adding a leading and
@@ -10142,161 +10211,257 @@ function readToken(lexer, prev) {
   var source = lexer.source;
   var body = source.body;
   var bodyLength = body.length;
-  var pos = positionAfterWhitespace(body, prev.end, lexer);
+  var pos = prev.end;
+
+  while (pos < bodyLength) {
+    var code = body.charCodeAt(pos);
+    var _line = lexer.line;
+
+    var _col = 1 + pos - lexer.lineStart; // SourceCharacter
+
+
+    switch (code) {
+      case 0xfeff: // <BOM>
+
+      case 9: //   \t
+
+      case 32: //  <space>
+
+      case 44:
+        //  ,
+        ++pos;
+        continue;
+
+      case 10:
+        //  \n
+        ++pos;
+        ++lexer.line;
+        lexer.lineStart = pos;
+        continue;
+
+      case 13:
+        //  \r
+        if (body.charCodeAt(pos + 1) === 10) {
+          pos += 2;
+        } else {
+          ++pos;
+        }
+
+        ++lexer.line;
+        lexer.lineStart = pos;
+        continue;
+
+      case 33:
+        //  !
+        return new _ast.Token(_tokenKind.TokenKind.BANG, pos, pos + 1, _line, _col, prev);
+
+      case 35:
+        //  #
+        return readComment(source, pos, _line, _col, prev);
+
+      case 36:
+        //  $
+        return new _ast.Token(_tokenKind.TokenKind.DOLLAR, pos, pos + 1, _line, _col, prev);
+
+      case 38:
+        //  &
+        return new _ast.Token(_tokenKind.TokenKind.AMP, pos, pos + 1, _line, _col, prev);
+
+      case 40:
+        //  (
+        return new _ast.Token(_tokenKind.TokenKind.PAREN_L, pos, pos + 1, _line, _col, prev);
+
+      case 41:
+        //  )
+        return new _ast.Token(_tokenKind.TokenKind.PAREN_R, pos, pos + 1, _line, _col, prev);
+
+      case 46:
+        //  .
+        if (body.charCodeAt(pos + 1) === 46 && body.charCodeAt(pos + 2) === 46) {
+          return new _ast.Token(_tokenKind.TokenKind.SPREAD, pos, pos + 3, _line, _col, prev);
+        }
+
+        break;
+
+      case 58:
+        //  :
+        return new _ast.Token(_tokenKind.TokenKind.COLON, pos, pos + 1, _line, _col, prev);
+
+      case 61:
+        //  =
+        return new _ast.Token(_tokenKind.TokenKind.EQUALS, pos, pos + 1, _line, _col, prev);
+
+      case 64:
+        //  @
+        return new _ast.Token(_tokenKind.TokenKind.AT, pos, pos + 1, _line, _col, prev);
+
+      case 91:
+        //  [
+        return new _ast.Token(_tokenKind.TokenKind.BRACKET_L, pos, pos + 1, _line, _col, prev);
+
+      case 93:
+        //  ]
+        return new _ast.Token(_tokenKind.TokenKind.BRACKET_R, pos, pos + 1, _line, _col, prev);
+
+      case 123:
+        // {
+        return new _ast.Token(_tokenKind.TokenKind.BRACE_L, pos, pos + 1, _line, _col, prev);
+
+      case 124:
+        // |
+        return new _ast.Token(_tokenKind.TokenKind.PIPE, pos, pos + 1, _line, _col, prev);
+
+      case 125:
+        // }
+        return new _ast.Token(_tokenKind.TokenKind.BRACE_R, pos, pos + 1, _line, _col, prev);
+
+      case 34:
+        //  "
+        if (body.charCodeAt(pos + 1) === 34 && body.charCodeAt(pos + 2) === 34) {
+          return readBlockString(source, pos, _line, _col, prev, lexer);
+        }
+
+        return readString(source, pos, _line, _col, prev);
+
+      case 45: //  -
+
+      case 48: //  0
+
+      case 49: //  1
+
+      case 50: //  2
+
+      case 51: //  3
+
+      case 52: //  4
+
+      case 53: //  5
+
+      case 54: //  6
+
+      case 55: //  7
+
+      case 56: //  8
+
+      case 57:
+        //  9
+        return readNumber(source, pos, code, _line, _col, prev);
+
+      case 65: //  A
+
+      case 66: //  B
+
+      case 67: //  C
+
+      case 68: //  D
+
+      case 69: //  E
+
+      case 70: //  F
+
+      case 71: //  G
+
+      case 72: //  H
+
+      case 73: //  I
+
+      case 74: //  J
+
+      case 75: //  K
+
+      case 76: //  L
+
+      case 77: //  M
+
+      case 78: //  N
+
+      case 79: //  O
+
+      case 80: //  P
+
+      case 81: //  Q
+
+      case 82: //  R
+
+      case 83: //  S
+
+      case 84: //  T
+
+      case 85: //  U
+
+      case 86: //  V
+
+      case 87: //  W
+
+      case 88: //  X
+
+      case 89: //  Y
+
+      case 90: //  Z
+
+      case 95: //  _
+
+      case 97: //  a
+
+      case 98: //  b
+
+      case 99: //  c
+
+      case 100: // d
+
+      case 101: // e
+
+      case 102: // f
+
+      case 103: // g
+
+      case 104: // h
+
+      case 105: // i
+
+      case 106: // j
+
+      case 107: // k
+
+      case 108: // l
+
+      case 109: // m
+
+      case 110: // n
+
+      case 111: // o
+
+      case 112: // p
+
+      case 113: // q
+
+      case 114: // r
+
+      case 115: // s
+
+      case 116: // t
+
+      case 117: // u
+
+      case 118: // v
+
+      case 119: // w
+
+      case 120: // x
+
+      case 121: // y
+
+      case 122:
+        // z
+        return readName(source, pos, _line, _col, prev);
+    }
+
+    throw (0, _syntaxError.syntaxError)(source, pos, unexpectedCharacterMessage(code));
+  }
+
   var line = lexer.line;
   var col = 1 + pos - lexer.lineStart;
-
-  if (pos >= bodyLength) {
-    return new _ast.Token(_tokenKind.TokenKind.EOF, bodyLength, bodyLength, line, col, prev);
-  }
-
-  var code = body.charCodeAt(pos); // SourceCharacter
-
-  switch (code) {
-    // !
-    case 33:
-      return new _ast.Token(_tokenKind.TokenKind.BANG, pos, pos + 1, line, col, prev);
-    // #
-
-    case 35:
-      return readComment(source, pos, line, col, prev);
-    // $
-
-    case 36:
-      return new _ast.Token(_tokenKind.TokenKind.DOLLAR, pos, pos + 1, line, col, prev);
-    // &
-
-    case 38:
-      return new _ast.Token(_tokenKind.TokenKind.AMP, pos, pos + 1, line, col, prev);
-    // (
-
-    case 40:
-      return new _ast.Token(_tokenKind.TokenKind.PAREN_L, pos, pos + 1, line, col, prev);
-    // )
-
-    case 41:
-      return new _ast.Token(_tokenKind.TokenKind.PAREN_R, pos, pos + 1, line, col, prev);
-    // .
-
-    case 46:
-      if (body.charCodeAt(pos + 1) === 46 && body.charCodeAt(pos + 2) === 46) {
-        return new _ast.Token(_tokenKind.TokenKind.SPREAD, pos, pos + 3, line, col, prev);
-      }
-
-      break;
-    // :
-
-    case 58:
-      return new _ast.Token(_tokenKind.TokenKind.COLON, pos, pos + 1, line, col, prev);
-    // =
-
-    case 61:
-      return new _ast.Token(_tokenKind.TokenKind.EQUALS, pos, pos + 1, line, col, prev);
-    // @
-
-    case 64:
-      return new _ast.Token(_tokenKind.TokenKind.AT, pos, pos + 1, line, col, prev);
-    // [
-
-    case 91:
-      return new _ast.Token(_tokenKind.TokenKind.BRACKET_L, pos, pos + 1, line, col, prev);
-    // ]
-
-    case 93:
-      return new _ast.Token(_tokenKind.TokenKind.BRACKET_R, pos, pos + 1, line, col, prev);
-    // {
-
-    case 123:
-      return new _ast.Token(_tokenKind.TokenKind.BRACE_L, pos, pos + 1, line, col, prev);
-    // |
-
-    case 124:
-      return new _ast.Token(_tokenKind.TokenKind.PIPE, pos, pos + 1, line, col, prev);
-    // }
-
-    case 125:
-      return new _ast.Token(_tokenKind.TokenKind.BRACE_R, pos, pos + 1, line, col, prev);
-    // A-Z _ a-z
-
-    case 65:
-    case 66:
-    case 67:
-    case 68:
-    case 69:
-    case 70:
-    case 71:
-    case 72:
-    case 73:
-    case 74:
-    case 75:
-    case 76:
-    case 77:
-    case 78:
-    case 79:
-    case 80:
-    case 81:
-    case 82:
-    case 83:
-    case 84:
-    case 85:
-    case 86:
-    case 87:
-    case 88:
-    case 89:
-    case 90:
-    case 95:
-    case 97:
-    case 98:
-    case 99:
-    case 100:
-    case 101:
-    case 102:
-    case 103:
-    case 104:
-    case 105:
-    case 106:
-    case 107:
-    case 108:
-    case 109:
-    case 110:
-    case 111:
-    case 112:
-    case 113:
-    case 114:
-    case 115:
-    case 116:
-    case 117:
-    case 118:
-    case 119:
-    case 120:
-    case 121:
-    case 122:
-      return readName(source, pos, line, col, prev);
-    // - 0-9
-
-    case 45:
-    case 48:
-    case 49:
-    case 50:
-    case 51:
-    case 52:
-    case 53:
-    case 54:
-    case 55:
-    case 56:
-    case 57:
-      return readNumber(source, pos, code, line, col, prev);
-    // "
-
-    case 34:
-      if (body.charCodeAt(pos + 1) === 34 && body.charCodeAt(pos + 2) === 34) {
-        return readBlockString(source, pos, line, col, prev, lexer);
-      }
-
-      return readString(source, pos, line, col, prev);
-  }
-
-  throw (0, _syntaxError.syntaxError)(source, pos, unexpectedCharacterMessage(code));
+  return new _ast.Token(_tokenKind.TokenKind.EOF, bodyLength, bodyLength, line, col, prev);
 }
 /**
  * Report a message that an unexpected character was encountered.
@@ -10314,43 +10479,6 @@ function unexpectedCharacterMessage(code) {
   }
 
   return "Cannot parse the unexpected character ".concat(printCharCode(code), ".");
-}
-/**
- * Reads from body starting at startPosition until it finds a non-whitespace
- * character, then returns the position of that character for lexing.
- */
-
-
-function positionAfterWhitespace(body, startPosition, lexer) {
-  var bodyLength = body.length;
-  var position = startPosition;
-
-  while (position < bodyLength) {
-    var code = body.charCodeAt(position); // tab | space | comma | BOM
-
-    if (code === 9 || code === 32 || code === 44 || code === 0xfeff) {
-      ++position;
-    } else if (code === 10) {
-      // new line
-      ++position;
-      ++lexer.line;
-      lexer.lineStart = position;
-    } else if (code === 13) {
-      // carriage return
-      if (body.charCodeAt(position + 1) === 10) {
-        position += 2;
-      } else {
-        ++position;
-      }
-
-      ++lexer.line;
-      lexer.lineStart = position;
-    } else {
-      break;
-    }
-  }
-
-  return position;
 }
 /**
  * Reads a comment token from the source file.
@@ -10714,10 +10842,7 @@ Object.defineProperty(exports, "__esModule", ({
 exports.parse = parse;
 exports.parseValue = parseValue;
 exports.parseType = parseType;
-
-var _inspect = _interopRequireDefault(__webpack_require__(102));
-
-var _devAssert = _interopRequireDefault(__webpack_require__(6514));
+exports.Parser = void 0;
 
 var _syntaxError = __webpack_require__(2295);
 
@@ -10725,15 +10850,13 @@ var _kinds = __webpack_require__(1927);
 
 var _ast = __webpack_require__(5494);
 
-var _source = __webpack_require__(5521);
-
 var _tokenKind = __webpack_require__(1565);
+
+var _source = __webpack_require__(5521);
 
 var _directiveLocation = __webpack_require__(1205);
 
 var _lexer = __webpack_require__(4605);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
  * Given a GraphQL source, parses it into a Document.
@@ -10781,11 +10904,22 @@ function parseType(source, options) {
   parser.expectToken(_tokenKind.TokenKind.EOF);
   return type;
 }
+/**
+ * This class is exported only to assist people in implementing their own parsers
+ * without duplicating too much code and should be used only as last resort for cases
+ * such as experimental syntax or if certain features could not be contributed upstream.
+ *
+ * It is still part of the internal API and is versioned, so any changes to it are never
+ * considered breaking changes. If you still need to support multiple versions of the
+ * library, please use the `versionInfo` variable for version detection.
+ *
+ * @internal
+ */
+
 
 var Parser = /*#__PURE__*/function () {
   function Parser(source, options) {
-    var sourceObj = typeof source === 'string' ? new _source.Source(source) : source;
-    sourceObj instanceof _source.Source || (0, _devAssert.default)(0, "Must provide Source. Received: ".concat((0, _inspect.default)(sourceObj), "."));
+    var sourceObj = (0, _source.isSource)(source) ? source : new _source.Source(source);
     this._lexer = new _lexer.Lexer(sourceObj);
     this._options = options;
   }
@@ -11530,21 +11664,25 @@ var Parser = /*#__PURE__*/function () {
   ;
 
   _proto.parseImplementsInterfaces = function parseImplementsInterfaces() {
-    var types = [];
+    var _this$_options2;
 
-    if (this.expectOptionalKeyword('implements')) {
-      // Optional leading ampersand
+    if (!this.expectOptionalKeyword('implements')) {
+      return [];
+    }
+
+    if (((_this$_options2 = this._options) === null || _this$_options2 === void 0 ? void 0 : _this$_options2.allowLegacySDLImplementsInterfaces) === true) {
+      var types = []; // Optional leading ampersand
+
       this.expectOptionalToken(_tokenKind.TokenKind.AMP);
 
       do {
-        var _this$_options2;
-
         types.push(this.parseNamedType());
-      } while (this.expectOptionalToken(_tokenKind.TokenKind.AMP) || // Legacy support for the SDL?
-      ((_this$_options2 = this._options) === null || _this$_options2 === void 0 ? void 0 : _this$_options2.allowLegacySDLImplementsInterfaces) === true && this.peek(_tokenKind.TokenKind.NAME));
+      } while (this.expectOptionalToken(_tokenKind.TokenKind.AMP) || this.peek(_tokenKind.TokenKind.NAME));
+
+      return types;
     }
 
-    return types;
+    return this.delimitedMany(_tokenKind.TokenKind.AMP, this.parseNamedType);
   }
   /**
    * FieldsDefinition : { FieldDefinition+ }
@@ -11680,18 +11818,7 @@ var Parser = /*#__PURE__*/function () {
   ;
 
   _proto.parseUnionMemberTypes = function parseUnionMemberTypes() {
-    var types = [];
-
-    if (this.expectOptionalToken(_tokenKind.TokenKind.EQUALS)) {
-      // Optional leading pipe
-      this.expectOptionalToken(_tokenKind.TokenKind.PIPE);
-
-      do {
-        types.push(this.parseNamedType());
-      } while (this.expectOptionalToken(_tokenKind.TokenKind.PIPE));
-    }
-
-    return types;
+    return this.expectOptionalToken(_tokenKind.TokenKind.EQUALS) ? this.delimitedMany(_tokenKind.TokenKind.PIPE, this.parseNamedType) : [];
   }
   /**
    * EnumTypeDefinition :
@@ -12042,15 +12169,7 @@ var Parser = /*#__PURE__*/function () {
   ;
 
   _proto.parseDirectiveLocations = function parseDirectiveLocations() {
-    // Optional leading pipe
-    this.expectOptionalToken(_tokenKind.TokenKind.PIPE);
-    var locations = [];
-
-    do {
-      locations.push(this.parseDirectiveLocation());
-    } while (this.expectOptionalToken(_tokenKind.TokenKind.PIPE));
-
-    return locations;
+    return this.delimitedMany(_tokenKind.TokenKind.PIPE, this.parseDirectiveLocation);
   }
   /*
    * DirectiveLocation :
@@ -12093,8 +12212,7 @@ var Parser = /*#__PURE__*/function () {
   } // Core parsing utility functions
 
   /**
-   * Returns a location object, used to identify the place in
-   * the source that created a given parsed object.
+   * Returns a location object, used to identify the place in the source that created a given parsed object.
    */
   ;
 
@@ -12114,8 +12232,8 @@ var Parser = /*#__PURE__*/function () {
     return this._lexer.token.kind === kind;
   }
   /**
-   * If the next token is of the given kind, return that token after advancing
-   * the lexer. Otherwise, do not change the parser state and throw an error.
+   * If the next token is of the given kind, return that token after advancing the lexer.
+   * Otherwise, do not change the parser state and throw an error.
    */
   ;
 
@@ -12131,8 +12249,8 @@ var Parser = /*#__PURE__*/function () {
     throw (0, _syntaxError.syntaxError)(this._lexer.source, token.start, "Expected ".concat(getTokenKindDesc(kind), ", found ").concat(getTokenDesc(token), "."));
   }
   /**
-   * If the next token is of the given kind, return that token after advancing
-   * the lexer. Otherwise, do not change the parser state and return undefined.
+   * If the next token is of the given kind, return that token after advancing the lexer.
+   * Otherwise, do not change the parser state and return undefined.
    */
   ;
 
@@ -12163,8 +12281,8 @@ var Parser = /*#__PURE__*/function () {
     }
   }
   /**
-   * If the next token is a given keyword, return "true" after advancing
-   * the lexer. Otherwise, do not change the parser state and return "false".
+   * If the next token is a given keyword, return "true" after advancing the lexer.
+   * Otherwise, do not change the parser state and return "false".
    */
   ;
 
@@ -12180,8 +12298,7 @@ var Parser = /*#__PURE__*/function () {
     return false;
   }
   /**
-   * Helper function for creating an error when an unexpected lexed token
-   * is encountered.
+   * Helper function for creating an error when an unexpected lexed token is encountered.
    */
   ;
 
@@ -12190,10 +12307,9 @@ var Parser = /*#__PURE__*/function () {
     return (0, _syntaxError.syntaxError)(this._lexer.source, token.start, "Unexpected ".concat(getTokenDesc(token), "."));
   }
   /**
-   * Returns a possibly empty list of parse nodes, determined by
-   * the parseFn. This list begins with a lex token of openKind
-   * and ends with a lex token of closeKind. Advances the parser
-   * to the next lex token after the closing token.
+   * Returns a possibly empty list of parse nodes, determined by the parseFn.
+   * This list begins with a lex token of openKind and ends with a lex token of closeKind.
+   * Advances the parser to the next lex token after the closing token.
    */
   ;
 
@@ -12209,10 +12325,9 @@ var Parser = /*#__PURE__*/function () {
   }
   /**
    * Returns a list of parse nodes, determined by the parseFn.
-   * It can be empty only if open token is missing otherwise it will always
-   * return non-empty list that begins with a lex token of openKind and ends
-   * with a lex token of closeKind. Advances the parser to the next lex token
-   * after the closing token.
+   * It can be empty only if open token is missing otherwise it will always return non-empty list
+   * that begins with a lex token of openKind and ends with a lex token of closeKind.
+   * Advances the parser to the next lex token after the closing token.
    */
   ;
 
@@ -12230,10 +12345,9 @@ var Parser = /*#__PURE__*/function () {
     return [];
   }
   /**
-   * Returns a non-empty list of parse nodes, determined by
-   * the parseFn. This list begins with a lex token of openKind
-   * and ends with a lex token of closeKind. Advances the parser
-   * to the next lex token after the closing token.
+   * Returns a non-empty list of parse nodes, determined by the parseFn.
+   * This list begins with a lex token of openKind and ends with a lex token of closeKind.
+   * Advances the parser to the next lex token after the closing token.
    */
   ;
 
@@ -12246,21 +12360,40 @@ var Parser = /*#__PURE__*/function () {
     } while (!this.expectOptionalToken(closeKind));
 
     return nodes;
+  }
+  /**
+   * Returns a non-empty list of parse nodes, determined by the parseFn.
+   * This list may begin with a lex token of delimiterKind followed by items separated by lex tokens of tokenKind.
+   * Advances the parser to the next lex token after last item in the list.
+   */
+  ;
+
+  _proto.delimitedMany = function delimitedMany(delimiterKind, parseFn) {
+    this.expectOptionalToken(delimiterKind);
+    var nodes = [];
+
+    do {
+      nodes.push(parseFn.call(this));
+    } while (this.expectOptionalToken(delimiterKind));
+
+    return nodes;
   };
 
   return Parser;
 }();
 /**
- * A helper function to describe a token as a string for debugging
+ * A helper function to describe a token as a string for debugging.
  */
 
+
+exports.Parser = Parser;
 
 function getTokenDesc(token) {
   var value = token.value;
   return getTokenKindDesc(token.kind) + (value != null ? " \"".concat(value, "\"") : '');
 }
 /**
- * A helper function to describe a token kind as a string for debugging
+ * A helper function to describe a token kind as a string for debugging.
  */
 
 
@@ -12363,11 +12496,16 @@ function leftPad(len, str) {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.isSource = isSource;
 exports.Source = void 0;
 
 var _symbols = __webpack_require__(3255);
 
+var _inspect = _interopRequireDefault(__webpack_require__(102));
+
 var _devAssert = _interopRequireDefault(__webpack_require__(6514));
+
+var _instanceOf = _interopRequireDefault(__webpack_require__(3481));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -12389,12 +12527,13 @@ var Source = /*#__PURE__*/function () {
       line: 1,
       column: 1
     };
+    typeof body === 'string' || (0, _devAssert.default)(0, "Body must be a string. Received: ".concat((0, _inspect.default)(body), "."));
     this.body = body;
     this.name = name;
     this.locationOffset = locationOffset;
     this.locationOffset.line > 0 || (0, _devAssert.default)(0, 'line in locationOffset is 1-indexed and must be positive.');
     this.locationOffset.column > 0 || (0, _devAssert.default)(0, 'column in locationOffset is 1-indexed and must be positive.');
-  } // $FlowFixMe Flow doesn't support computed properties yet
+  } // $FlowFixMe[unsupported-syntax] Flow doesn't support computed properties yet
 
 
   _createClass(Source, [{
@@ -12406,8 +12545,19 @@ var Source = /*#__PURE__*/function () {
 
   return Source;
 }();
+/**
+ * Test if the given value is a Source object.
+ *
+ * @internal
+ */
+
 
 exports.Source = Source;
+
+// eslint-disable-next-line no-redeclare
+function isSource(source) {
+  return (0, _instanceOf.default)(source, Source);
+}
 
 
 /***/ }),
@@ -12472,16 +12622,14 @@ Object.defineProperty(exports, "__esModule", ({
 exports.SYMBOL_TO_STRING_TAG = exports.SYMBOL_ASYNC_ITERATOR = exports.SYMBOL_ITERATOR = void 0;
 // In ES2015 (or a polyfilled) environment, this will be Symbol.iterator
 // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
-var SYMBOL_ITERATOR = typeof Symbol === 'function' ? Symbol.iterator : '@@iterator'; // In ES2017 (or a polyfilled) environment, this will be Symbol.asyncIterator
+var SYMBOL_ITERATOR = typeof Symbol === 'function' && Symbol.iterator != null ? Symbol.iterator : '@@iterator'; // In ES2017 (or a polyfilled) environment, this will be Symbol.asyncIterator
 // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
 
 exports.SYMBOL_ITERATOR = SYMBOL_ITERATOR;
-var SYMBOL_ASYNC_ITERATOR = // $FlowFixMe Flow doesn't define `Symbol.asyncIterator` yet
-typeof Symbol === 'function' ? Symbol.asyncIterator : '@@asyncIterator'; // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
+var SYMBOL_ASYNC_ITERATOR = typeof Symbol === 'function' && Symbol.asyncIterator != null ? Symbol.asyncIterator : '@@asyncIterator'; // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
 
 exports.SYMBOL_ASYNC_ITERATOR = SYMBOL_ASYNC_ITERATOR;
-var SYMBOL_TO_STRING_TAG = // $FlowFixMe Flow doesn't define `Symbol.toStringTag` yet
-typeof Symbol === 'function' ? Symbol.toStringTag : '@@toStringTag';
+var SYMBOL_TO_STRING_TAG = typeof Symbol === 'function' && Symbol.toStringTag != null ? Symbol.toStringTag : '@@toStringTag';
 exports.SYMBOL_TO_STRING_TAG = SYMBOL_TO_STRING_TAG;
 
 
