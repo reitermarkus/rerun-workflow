@@ -1560,12 +1560,7 @@ var UserStatusOrderField;
 exports.PullRequestsWithLabels = graphql_tag_1.default `
     query PullRequestsWithLabels($owner: String!, $repo: String!, $labels: [String!]) {
   repository(owner: $owner, name: $repo) {
-    pullRequests(
-      labels: $labels
-      states: OPEN
-      first: 100
-      orderBy: {field: UPDATED_AT, direction: DESC}
-    ) {
+    pullRequests(labels: $labels, states: OPEN, first: 100, orderBy: {field: UPDATED_AT, direction: DESC}) {
       edges {
         node {
           number
@@ -2638,6 +2633,7 @@ exports.getOctokitOptions = getOctokitOptions;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const url = __webpack_require__(8835);
 const http = __webpack_require__(8605);
 const https = __webpack_require__(7211);
 const pm = __webpack_require__(6443);
@@ -2686,7 +2682,7 @@ var MediaTypes;
  * @param serverUrl  The server URL where the request will be sent. For example, https://api.github.com
  */
 function getProxyUrl(serverUrl) {
-    let proxyUrl = pm.getProxyUrl(new URL(serverUrl));
+    let proxyUrl = pm.getProxyUrl(url.parse(serverUrl));
     return proxyUrl ? proxyUrl.href : '';
 }
 exports.getProxyUrl = getProxyUrl;
@@ -2705,15 +2701,6 @@ const HttpResponseRetryCodes = [
 const RetryableHttpVerbs = ['OPTIONS', 'GET', 'DELETE', 'HEAD'];
 const ExponentialBackoffCeiling = 10;
 const ExponentialBackoffTimeSlice = 5;
-class HttpClientError extends Error {
-    constructor(message, statusCode) {
-        super(message);
-        this.name = 'HttpClientError';
-        this.statusCode = statusCode;
-        Object.setPrototypeOf(this, HttpClientError.prototype);
-    }
-}
-exports.HttpClientError = HttpClientError;
 class HttpClientResponse {
     constructor(message) {
         this.message = message;
@@ -2732,7 +2719,7 @@ class HttpClientResponse {
 }
 exports.HttpClientResponse = HttpClientResponse;
 function isHttps(requestUrl) {
-    let parsedUrl = new URL(requestUrl);
+    let parsedUrl = url.parse(requestUrl);
     return parsedUrl.protocol === 'https:';
 }
 exports.isHttps = isHttps;
@@ -2837,7 +2824,7 @@ class HttpClient {
         if (this._disposed) {
             throw new Error('Client has already been disposed.');
         }
-        let parsedUrl = new URL(requestUrl);
+        let parsedUrl = url.parse(requestUrl);
         let info = this._prepareRequest(verb, parsedUrl, headers);
         // Only perform retries on reads since writes may not be idempotent.
         let maxTries = this._allowRetries && RetryableHttpVerbs.indexOf(verb) != -1
@@ -2876,7 +2863,7 @@ class HttpClient {
                     // if there's no location to redirect to, we won't
                     break;
                 }
-                let parsedRedirectUrl = new URL(redirectUrl);
+                let parsedRedirectUrl = url.parse(redirectUrl);
                 if (parsedUrl.protocol == 'https:' &&
                     parsedUrl.protocol != parsedRedirectUrl.protocol &&
                     !this._allowRedirectDowngrade) {
@@ -2992,7 +2979,7 @@ class HttpClient {
      * @param serverUrl  The server URL where the request will be sent. For example, https://api.github.com
      */
     getAgent(serverUrl) {
-        let parsedUrl = new URL(serverUrl);
+        let parsedUrl = url.parse(serverUrl);
         return this._getAgent(parsedUrl);
     }
     _prepareRequest(method, requestUrl, headers) {
@@ -3065,7 +3052,7 @@ class HttpClient {
                 maxSockets: maxSockets,
                 keepAlive: this._keepAlive,
                 proxy: {
-                    proxyAuth: `${proxyUrl.username}:${proxyUrl.password}`,
+                    proxyAuth: proxyUrl.auth,
                     host: proxyUrl.hostname,
                     port: proxyUrl.port
                 }
@@ -3160,8 +3147,12 @@ class HttpClient {
                 else {
                     msg = 'Failed request: (' + statusCode + ')';
                 }
-                let err = new HttpClientError(msg, statusCode);
-                err.result = response.result;
+                let err = new Error(msg);
+                // attach statusCode and body obj (if available) to the error object
+                err['statusCode'] = statusCode;
+                if (response.result) {
+                    err['result'] = response.result;
+                }
                 reject(err);
             }
             else {
@@ -3176,11 +3167,12 @@ exports.HttpClient = HttpClient;
 /***/ }),
 
 /***/ 6443:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const url = __webpack_require__(8835);
 function getProxyUrl(reqUrl) {
     let usingSsl = reqUrl.protocol === 'https:';
     let proxyUrl;
@@ -3195,7 +3187,7 @@ function getProxyUrl(reqUrl) {
         proxyVar = process.env['http_proxy'] || process.env['HTTP_PROXY'];
     }
     if (proxyVar) {
-        proxyUrl = new URL(proxyVar);
+        proxyUrl = url.parse(proxyVar);
     }
     return proxyUrl;
 }
@@ -3311,43 +3303,56 @@ var request = __webpack_require__(6234);
 var graphql = __webpack_require__(8467);
 var authToken = __webpack_require__(334);
 
-function _objectWithoutPropertiesLoose(source, excluded) {
-  if (source == null) return {};
-  var target = {};
-  var sourceKeys = Object.keys(source);
-  var key, i;
-
-  for (i = 0; i < sourceKeys.length; i++) {
-    key = sourceKeys[i];
-    if (excluded.indexOf(key) >= 0) continue;
-    target[key] = source[key];
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
   }
 
-  return target;
+  return obj;
 }
 
-function _objectWithoutProperties(source, excluded) {
-  if (source == null) return {};
-
-  var target = _objectWithoutPropertiesLoose(source, excluded);
-
-  var key, i;
+function ownKeys(object, enumerableOnly) {
+  var keys = Object.keys(object);
 
   if (Object.getOwnPropertySymbols) {
-    var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
+    var symbols = Object.getOwnPropertySymbols(object);
+    if (enumerableOnly) symbols = symbols.filter(function (sym) {
+      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+    });
+    keys.push.apply(keys, symbols);
+  }
 
-    for (i = 0; i < sourceSymbolKeys.length; i++) {
-      key = sourceSymbolKeys[i];
-      if (excluded.indexOf(key) >= 0) continue;
-      if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
-      target[key] = source[key];
+  return keys;
+}
+
+function _objectSpread2(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+
+    if (i % 2) {
+      ownKeys(Object(source), true).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
     }
   }
 
   return target;
 }
 
-const VERSION = "3.2.1";
+const VERSION = "3.1.2";
 
 class Octokit {
   constructor(options = {}) {
@@ -3379,7 +3384,9 @@ class Octokit {
     }
 
     this.request = request.request.defaults(requestDefaults);
-    this.graphql = graphql.withCustomRequest(this.request).defaults(requestDefaults);
+    this.graphql = graphql.withCustomRequest(this.request).defaults(_objectSpread2(_objectSpread2({}, requestDefaults), {}, {
+      baseUrl: requestDefaults.baseUrl.replace(/\/api\/v3$/, "/api")
+    }));
     this.log = Object.assign({
       debug: () => {},
       info: () => {},
@@ -3387,7 +3394,7 @@ class Octokit {
       error: console.error.bind(console)
     }, options.log);
     this.hook = hook; // (1) If neither `options.authStrategy` nor `options.auth` are set, the `octokit` instance
-    //     is unauthenticated. The `this.auth()` method is a no-op and no request hook is registered.
+    //     is unauthenticated. The `this.auth()` method is a no-op and no request hook is registred.
     // (2) If only `options.auth` is set, use the default token authentication strategy.
     // (3) If `options.authStrategy` is set then use it and pass in `options.auth`. Always pass own request as many strategies accept a custom request instance.
     // TODO: type `options.auth` based on `options.authStrategy`.
@@ -3406,21 +3413,8 @@ class Octokit {
         this.auth = auth;
       }
     } else {
-      const {
-        authStrategy
-      } = options,
-            otherOptions = _objectWithoutProperties(options, ["authStrategy"]);
-
-      const auth = authStrategy(Object.assign({
-        request: this.request,
-        log: this.log,
-        // we pass the current octokit instance as well as its constructor options
-        // to allow for authentication strategies that return a new octokit instance
-        // that shares the same internal state as the current one. The original
-        // requirement for this was the "event-octokit" authentication strategy
-        // of https://github.com/probot/octokit-auth-probot.
-        octokit: this,
-        octokitOptions: otherOptions
+      const auth = options.authStrategy(Object.assign({
+        request: this.request
       }, options.auth)); // @ts-ignore  ¯\_(ツ)_/¯
 
       hook.wrap("request", auth.hook);
@@ -3487,7 +3481,9 @@ exports.Octokit = Octokit;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-var isPlainObject = __webpack_require__(3287);
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var isPlainObject = _interopDefault(__webpack_require__(4038));
 var universalUserAgent = __webpack_require__(5030);
 
 function lowercaseKeys(object) {
@@ -3504,7 +3500,7 @@ function lowercaseKeys(object) {
 function mergeDeep(defaults, options) {
   const result = Object.assign({}, defaults);
   Object.keys(options).forEach(key => {
-    if (isPlainObject.isPlainObject(options[key])) {
+    if (isPlainObject(options[key])) {
       if (!(key in defaults)) Object.assign(result, {
         [key]: options[key]
       });else result[key] = mergeDeep(defaults[key], options[key]);
@@ -3515,16 +3511,6 @@ function mergeDeep(defaults, options) {
     }
   });
   return result;
-}
-
-function removeUndefinedProperties(obj) {
-  for (const key in obj) {
-    if (obj[key] === undefined) {
-      delete obj[key];
-    }
-  }
-
-  return obj;
 }
 
 function merge(defaults, route, options) {
@@ -3541,10 +3527,7 @@ function merge(defaults, route, options) {
   } // lowercase header names before merging with defaults to avoid duplicates
 
 
-  options.headers = lowercaseKeys(options.headers); // remove properties with undefined values before merging
-
-  removeUndefinedProperties(options);
-  removeUndefinedProperties(options.headers);
+  options.headers = lowercaseKeys(options.headers);
   const mergedOptions = mergeDeep(defaults || {}, options); // mediaType.previews arrays are merged, instead of overwritten
 
   if (defaults && defaults.mediaType.previews.length) {
@@ -3766,7 +3749,7 @@ function parse(options) {
   // https://fetch.spec.whatwg.org/#methods
   let method = options.method.toUpperCase(); // replace :varname with {varname} to make it RFC 6570 compatible
 
-  let url = (options.url || "/").replace(/:([a-z]\w+)/g, "{$1}");
+  let url = (options.url || "/").replace(/:([a-z]\w+)/g, "{+$1}");
   let headers = Object.assign({}, options.headers);
   let body;
   let parameters = omit(options, ["method", "baseUrl", "url", "headers", "request", "mediaType"]); // extract variable names from URL to calculate remaining variables later
@@ -3780,9 +3763,9 @@ function parse(options) {
 
   const omittedParameters = Object.keys(options).filter(option => urlVariableNames.includes(option)).concat("baseUrl");
   const remainingParameters = omit(parameters, omittedParameters);
-  const isBinaryRequest = /application\/octet-stream/i.test(headers.accept);
+  const isBinaryRequset = /application\/octet-stream/i.test(headers.accept);
 
-  if (!isBinaryRequest) {
+  if (!isBinaryRequset) {
     if (options.mediaType.format) {
       // e.g. application/vnd.github.v3+json => application/vnd.github.v3.raw
       headers.accept = headers.accept.split(/,/).map(preview => preview.replace(/application\/vnd(\.\w+)(\.v3)?(\.\w+)?(\+json)?$/, `application/vnd$1$2.${options.mediaType.format}`)).join(",");
@@ -3851,7 +3834,7 @@ function withDefaults(oldDefaults, newDefaults) {
   });
 }
 
-const VERSION = "6.0.9";
+const VERSION = "6.0.5";
 
 const userAgent = `octokit-endpoint.js/${VERSION} ${universalUserAgent.getUserAgent()}`; // DEFAULTS has all properties set that EndpointOptions has, except url.
 // So we use RequestParameters and add method as additional required property.
@@ -3877,6 +3860,50 @@ exports.endpoint = endpoint;
 
 /***/ }),
 
+/***/ 4038:
+/***/ ((module) => {
+
+"use strict";
+
+
+/*!
+ * is-plain-object <https://github.com/jonschlinkert/is-plain-object>
+ *
+ * Copyright (c) 2014-2017, Jon Schlinkert.
+ * Released under the MIT License.
+ */
+
+function isObject(o) {
+  return Object.prototype.toString.call(o) === '[object Object]';
+}
+
+function isPlainObject(o) {
+  var ctor,prot;
+
+  if (isObject(o) === false) return false;
+
+  // If has modified constructor
+  ctor = o.constructor;
+  if (ctor === undefined) return true;
+
+  // If has modified prototype
+  prot = ctor.prototype;
+  if (isObject(prot) === false) return false;
+
+  // If constructor does not have an Object-specific method
+  if (prot.hasOwnProperty('isPrototypeOf') === false) {
+    return false;
+  }
+
+  // Most likely a plain Object
+  return true;
+}
+
+module.exports = isPlainObject;
+
+
+/***/ }),
+
 /***/ 8467:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
@@ -3888,7 +3915,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 var request = __webpack_require__(6234);
 var universalUserAgent = __webpack_require__(5030);
 
-const VERSION = "4.5.7";
+const VERSION = "4.5.4";
 
 class GraphqlError extends Error {
   constructor(request, response) {
@@ -3911,18 +3938,13 @@ class GraphqlError extends Error {
 }
 
 const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
-const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
 function graphql(request, query, options) {
-  if (typeof query === "string" && options && "query" in options) {
-    return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
-  }
-
-  const parsedOptions = typeof query === "string" ? Object.assign({
+  options = typeof query === "string" ? options = Object.assign({
     query
-  }, options) : query;
-  const requestOptions = Object.keys(parsedOptions).reduce((result, key) => {
+  }, options) : options = query;
+  const requestOptions = Object.keys(options).reduce((result, key) => {
     if (NON_VARIABLE_OPTIONS.includes(key)) {
-      result[key] = parsedOptions[key];
+      result[key] = options[key];
       return result;
     }
 
@@ -3930,17 +3952,9 @@ function graphql(request, query, options) {
       result.variables = {};
     }
 
-    result.variables[key] = parsedOptions[key];
+    result.variables[key] = options[key];
     return result;
-  }, {}); // workaround for GitHub Enterprise baseUrl set with /api/v3 suffix
-  // https://github.com/octokit/auth-app.js/issues/111#issuecomment-657610451
-
-  const baseUrl = parsedOptions.baseUrl || request.endpoint.DEFAULTS.baseUrl;
-
-  if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
-    requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
-  }
-
+  }, {});
   return request(requestOptions).then(response => {
     if (response.data.errors) {
       const headers = {};
@@ -4001,7 +4015,7 @@ exports.withCustomRequest = withCustomRequest;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-const VERSION = "2.6.0";
+const VERSION = "2.3.2";
 
 /**
  * Some “list” response that can be paginated have a different response structure
@@ -4054,23 +4068,26 @@ function iterator(octokit, route, parameters) {
   let url = options.url;
   return {
     [Symbol.asyncIterator]: () => ({
-      async next() {
-        if (!url) return {
-          done: true
-        };
-        const response = await requestMethod({
+      next() {
+        if (!url) {
+          return Promise.resolve({
+            done: true
+          });
+        }
+
+        return requestMethod({
           method,
           url,
           headers
+        }).then(normalizePaginatedListResponse).then(response => {
+          // `response.headers.link` format:
+          // '<https://api.github.com/users/aseemk/followers?page=2>; rel="next", <https://api.github.com/users/aseemk/followers?page=2>; rel="last"'
+          // sets `url` to undefined if "next" URL is not present or `link` header is not set
+          url = ((response.headers.link || "").match(/<([^>]+)>;\s*rel="next"/) || [])[1];
+          return {
+            value: response
+          };
         });
-        const normalizedResponse = normalizePaginatedListResponse(response); // `response.headers.link` format:
-        // '<https://api.github.com/users/aseemk/followers?page=2>; rel="next", <https://api.github.com/users/aseemk/followers?page=2>; rel="last"'
-        // sets `url` to undefined if "next" URL is not present or `link` header is not set
-
-        url = ((normalizedResponse.headers.link || "").match(/<([^>]+)>;\s*rel="next"/) || [])[1];
-        return {
-          value: normalizedResponse
-        };
       }
 
     })
@@ -4108,10 +4125,6 @@ function gather(octokit, results, iterator, mapFn) {
   });
 }
 
-const composePaginateRest = Object.assign(paginate, {
-  iterator
-});
-
 /**
  * @param octokit Octokit instance
  * @param options Options passed to Octokit constructor
@@ -4126,7 +4139,6 @@ function paginateRest(octokit) {
 }
 paginateRest.VERSION = VERSION;
 
-exports.composePaginateRest = composePaginateRest;
 exports.paginateRest = paginateRest;
 //# sourceMappingURL=index.js.map
 
@@ -4225,7 +4237,11 @@ const Endpoints = {
     unstarRepoForAuthenticatedUser: ["DELETE /user/starred/{owner}/{repo}"]
   },
   apps: {
-    addRepoToInstallation: ["PUT /user/installations/{installation_id}/repositories/{repository_id}"],
+    addRepoToInstallation: ["PUT /user/installations/{installation_id}/repositories/{repository_id}", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
     checkToken: ["POST /applications/{client_id}/token"],
     createContentAttachment: ["POST /content_references/{content_reference_id}/attachments", {
       mediaType: {
@@ -4233,29 +4249,81 @@ const Endpoints = {
       }
     }],
     createFromManifest: ["POST /app-manifests/{code}/conversions"],
-    createInstallationAccessToken: ["POST /app/installations/{installation_id}/access_tokens"],
+    createInstallationAccessToken: ["POST /app/installations/{installation_id}/access_tokens", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
     deleteAuthorization: ["DELETE /applications/{client_id}/grant"],
-    deleteInstallation: ["DELETE /app/installations/{installation_id}"],
+    deleteInstallation: ["DELETE /app/installations/{installation_id}", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
     deleteToken: ["DELETE /applications/{client_id}/token"],
-    getAuthenticated: ["GET /app"],
-    getBySlug: ["GET /apps/{app_slug}"],
-    getInstallation: ["GET /app/installations/{installation_id}"],
-    getOrgInstallation: ["GET /orgs/{org}/installation"],
-    getRepoInstallation: ["GET /repos/{owner}/{repo}/installation"],
+    getAuthenticated: ["GET /app", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
+    getBySlug: ["GET /apps/{app_slug}", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
+    getInstallation: ["GET /app/installations/{installation_id}", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
+    getOrgInstallation: ["GET /orgs/{org}/installation", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
+    getRepoInstallation: ["GET /repos/{owner}/{repo}/installation", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
     getSubscriptionPlanForAccount: ["GET /marketplace_listing/accounts/{account_id}"],
     getSubscriptionPlanForAccountStubbed: ["GET /marketplace_listing/stubbed/accounts/{account_id}"],
-    getUserInstallation: ["GET /users/{username}/installation"],
+    getUserInstallation: ["GET /users/{username}/installation", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
     listAccountsForPlan: ["GET /marketplace_listing/plans/{plan_id}/accounts"],
     listAccountsForPlanStubbed: ["GET /marketplace_listing/stubbed/plans/{plan_id}/accounts"],
-    listInstallationReposForAuthenticatedUser: ["GET /user/installations/{installation_id}/repositories"],
-    listInstallations: ["GET /app/installations"],
-    listInstallationsForAuthenticatedUser: ["GET /user/installations"],
+    listInstallationReposForAuthenticatedUser: ["GET /user/installations/{installation_id}/repositories", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
+    listInstallations: ["GET /app/installations", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
+    listInstallationsForAuthenticatedUser: ["GET /user/installations", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
     listPlans: ["GET /marketplace_listing/plans"],
     listPlansStubbed: ["GET /marketplace_listing/stubbed/plans"],
-    listReposAccessibleToInstallation: ["GET /installation/repositories"],
+    listReposAccessibleToInstallation: ["GET /installation/repositories", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
     listSubscriptionsForAuthenticatedUser: ["GET /user/marketplace_purchases"],
     listSubscriptionsForAuthenticatedUserStubbed: ["GET /user/marketplace_purchases/stubbed"],
-    removeRepoFromInstallation: ["DELETE /user/installations/{installation_id}/repositories/{repository_id}"],
+    removeRepoFromInstallation: ["DELETE /user/installations/{installation_id}/repositories/{repository_id}", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
     resetToken: ["PATCH /applications/{client_id}/token"],
     revokeInstallationAccessToken: ["DELETE /installation/token"],
     suspendInstallation: ["PUT /app/installations/{installation_id}/suspended"],
@@ -4327,15 +4395,8 @@ const Endpoints = {
     }]
   },
   codeScanning: {
-    getAlert: ["GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}", {}, {
-      renamedParameters: {
-        alert_id: "alert_number"
-      }
-    }],
-    listAlertsForRepo: ["GET /repos/{owner}/{repo}/code-scanning/alerts"],
-    listRecentAnalyses: ["GET /repos/{owner}/{repo}/code-scanning/analyses"],
-    updateAlert: ["PATCH /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}"],
-    uploadSarif: ["POST /repos/{owner}/{repo}/code-scanning/sarifs"]
+    getAlert: ["GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_id}"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/code-scanning/alerts"]
   },
   codesOfConduct: {
     getAllCodesOfConduct: ["GET /codes_of_conduct", {
@@ -4577,7 +4638,11 @@ const Endpoints = {
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
     list: ["GET /organizations"],
-    listAppInstallations: ["GET /orgs/{org}/installations"],
+    listAppInstallations: ["GET /orgs/{org}/installations", {
+      mediaType: {
+        previews: ["machine-man"]
+      }
+    }],
     listBlockedUsers: ["GET /orgs/{org}/blocks"],
     listForAuthenticatedUser: ["GET /user/orgs"],
     listForUser: ["GET /users/{username}/orgs"],
@@ -5190,7 +5255,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "4.2.1";
+const VERSION = "4.1.3";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -5370,18 +5435,18 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var endpoint = __webpack_require__(9440);
 var universalUserAgent = __webpack_require__(5030);
-var isPlainObject = __webpack_require__(3287);
+var isPlainObject = _interopDefault(__webpack_require__(9886));
 var nodeFetch = _interopDefault(__webpack_require__(467));
 var requestError = __webpack_require__(537);
 
-const VERSION = "5.4.10";
+const VERSION = "5.4.7";
 
 function getBufferResponse(response) {
   return response.arrayBuffer();
 }
 
 function fetchWrapper(requestOptions) {
-  if (isPlainObject.isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
+  if (isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
     requestOptions.body = JSON.stringify(requestOptions.body);
   }
 
@@ -5510,6 +5575,50 @@ const request = withDefaults(endpoint.endpoint, {
 
 exports.request = request;
 //# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
+/***/ 9886:
+/***/ ((module) => {
+
+"use strict";
+
+
+/*!
+ * is-plain-object <https://github.com/jonschlinkert/is-plain-object>
+ *
+ * Copyright (c) 2014-2017, Jon Schlinkert.
+ * Released under the MIT License.
+ */
+
+function isObject(o) {
+  return Object.prototype.toString.call(o) === '[object Object]';
+}
+
+function isPlainObject(o) {
+  var ctor,prot;
+
+  if (isObject(o) === false) return false;
+
+  // If has modified constructor
+  ctor = o.constructor;
+  if (ctor === undefined) return true;
+
+  // If has modified prototype
+  prot = ctor.prototype;
+  if (isObject(prot) === false) return false;
+
+  // If constructor does not have an Object-specific method
+  if (prot.hasOwnProperty('isPrototypeOf') === false) {
+    return false;
+  }
+
+  // Most likely a plain Object
+  return true;
+}
+
+module.exports = isPlainObject;
 
 
 /***/ }),
@@ -9201,7 +9310,7 @@ var GraphQLError = /*#__PURE__*/function (_Error) {
     value: function toString() {
       return printError(this);
     } // FIXME: workaround to not break chai comparisons, should be remove in v16
-    // $FlowFixMe[unsupported-syntax] Flow doesn't support computed properties yet
+    // $FlowFixMe Flow doesn't support computed properties yet
 
   }, {
     key: _symbols.SYMBOL_TO_STRING_TAG,
@@ -9379,6 +9488,7 @@ function formatObjectValue(value, previouslySeenValues) {
   var customInspectFn = getCustomFn(value);
 
   if (customInspectFn !== undefined) {
+    // $FlowFixMe(>=0.90.0)
     var customValue = customInspectFn.call(value); // check for infinite recursion
 
     if (customValue !== value) {
@@ -9460,50 +9570,6 @@ function getObjectTag(object) {
 
   return tag;
 }
-
-
-/***/ }),
-
-/***/ 3481:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", ({
-  value: true
-}));
-exports.default = void 0;
-
-/**
- * A replacement for instanceof which includes an error warning when multi-realm
- * constructors are detected.
- */
-// See: https://expressjs.com/en/advanced/best-practice-performance.html#set-node_env-to-production
-// See: https://webpack.js.org/guides/production/
-var _default = process.env.NODE_ENV === 'production' ? // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
-// eslint-disable-next-line no-shadow
-function instanceOf(value, constructor) {
-  return value instanceof constructor;
-} : // eslint-disable-next-line no-shadow
-function instanceOf(value, constructor) {
-  if (value instanceof constructor) {
-    return true;
-  }
-
-  if (value) {
-    var valueClass = value.constructor;
-    var className = constructor.name;
-
-    if (className && valueClass && valueClass.name === className) {
-      throw new Error("Cannot use ".concat(className, " \"").concat(value, "\" from another module or realm.\n\nEnsure that there is only one instance of \"graphql\" in the node_modules\ndirectory. If different versions of \"graphql\" are the dependencies of other\nrelied on modules, use \"resolutions\" to ensure only one version is installed.\n\nhttps://yarnpkg.com/en/docs/selective-version-resolutions\n\nDuplicate \"graphql\" modules cannot be used at the same time since different\nversions may have different capabilities and behavior. The data from one\nversion used in the function from another could produce confusing and\nspurious results."));
-    }
-  }
-
-  return false;
-};
-
-exports.default = _default;
 
 
 /***/ }),
@@ -9737,7 +9803,7 @@ function dedentBlockStringValue(rawString) {
   // Expand a block string's raw value into independent lines.
   var lines = rawString.split(/\r\n|[\n\r]/g); // Remove common indentation from all lines but first.
 
-  var commonIndent = getBlockStringIndentation(rawString);
+  var commonIndent = getBlockStringIndentation(lines);
 
   if (commonIndent !== 0) {
     for (var i = 1; i < lines.length; i++) {
@@ -9746,78 +9812,57 @@ function dedentBlockStringValue(rawString) {
   } // Remove leading and trailing blank lines.
 
 
-  var startLine = 0;
-
-  while (startLine < lines.length && isBlank(lines[startLine])) {
-    ++startLine;
+  while (lines.length > 0 && isBlank(lines[0])) {
+    lines.shift();
   }
 
-  var endLine = lines.length;
-
-  while (endLine > startLine && isBlank(lines[endLine - 1])) {
-    --endLine;
+  while (lines.length > 0 && isBlank(lines[lines.length - 1])) {
+    lines.pop();
   } // Return a string of the lines joined with U+000A.
 
 
-  return lines.slice(startLine, endLine).join('\n');
-}
-
-function isBlank(str) {
-  for (var i = 0; i < str.length; ++i) {
-    if (str[i] !== ' ' && str[i] !== '\t') {
-      return false;
-    }
-  }
-
-  return true;
+  return lines.join('\n');
 }
 /**
  * @internal
  */
 
 
-function getBlockStringIndentation(value) {
-  var _commonIndent;
-
-  var isFirstLine = true;
-  var isEmptyLine = true;
-  var indent = 0;
+function getBlockStringIndentation(lines) {
   var commonIndent = null;
 
-  for (var i = 0; i < value.length; ++i) {
-    switch (value.charCodeAt(i)) {
-      case 13:
-        //  \r
-        if (value.charCodeAt(i + 1) === 10) {
-          ++i; // skip \r\n as one symbol
-        }
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i];
+    var indent = leadingWhitespace(line);
 
-      // falls through
+    if (indent === line.length) {
+      continue; // skip empty lines
+    }
 
-      case 10:
-        //  \n
-        isFirstLine = false;
-        isEmptyLine = true;
-        indent = 0;
+    if (commonIndent === null || indent < commonIndent) {
+      commonIndent = indent;
+
+      if (commonIndent === 0) {
         break;
-
-      case 9: //   \t
-
-      case 32:
-        //  <space>
-        ++indent;
-        break;
-
-      default:
-        if (isEmptyLine && !isFirstLine && (commonIndent === null || indent < commonIndent)) {
-          commonIndent = indent;
-        }
-
-        isEmptyLine = false;
+      }
     }
   }
 
-  return (_commonIndent = commonIndent) !== null && _commonIndent !== void 0 ? _commonIndent : 0;
+  return commonIndent === null ? 0 : commonIndent;
+}
+
+function leadingWhitespace(str) {
+  var i = 0;
+
+  while (i < str.length && (str[i] === ' ' || str[i] === '\t')) {
+    i++;
+  }
+
+  return i;
+}
+
+function isBlank(str) {
+  return leadingWhitespace(str) === str.length;
 }
 /**
  * Print a block string in the indented block form by adding a leading and
@@ -10097,257 +10142,161 @@ function readToken(lexer, prev) {
   var source = lexer.source;
   var body = source.body;
   var bodyLength = body.length;
-  var pos = prev.end;
-
-  while (pos < bodyLength) {
-    var code = body.charCodeAt(pos);
-    var _line = lexer.line;
-
-    var _col = 1 + pos - lexer.lineStart; // SourceCharacter
-
-
-    switch (code) {
-      case 0xfeff: // <BOM>
-
-      case 9: //   \t
-
-      case 32: //  <space>
-
-      case 44:
-        //  ,
-        ++pos;
-        continue;
-
-      case 10:
-        //  \n
-        ++pos;
-        ++lexer.line;
-        lexer.lineStart = pos;
-        continue;
-
-      case 13:
-        //  \r
-        if (body.charCodeAt(pos + 1) === 10) {
-          pos += 2;
-        } else {
-          ++pos;
-        }
-
-        ++lexer.line;
-        lexer.lineStart = pos;
-        continue;
-
-      case 33:
-        //  !
-        return new _ast.Token(_tokenKind.TokenKind.BANG, pos, pos + 1, _line, _col, prev);
-
-      case 35:
-        //  #
-        return readComment(source, pos, _line, _col, prev);
-
-      case 36:
-        //  $
-        return new _ast.Token(_tokenKind.TokenKind.DOLLAR, pos, pos + 1, _line, _col, prev);
-
-      case 38:
-        //  &
-        return new _ast.Token(_tokenKind.TokenKind.AMP, pos, pos + 1, _line, _col, prev);
-
-      case 40:
-        //  (
-        return new _ast.Token(_tokenKind.TokenKind.PAREN_L, pos, pos + 1, _line, _col, prev);
-
-      case 41:
-        //  )
-        return new _ast.Token(_tokenKind.TokenKind.PAREN_R, pos, pos + 1, _line, _col, prev);
-
-      case 46:
-        //  .
-        if (body.charCodeAt(pos + 1) === 46 && body.charCodeAt(pos + 2) === 46) {
-          return new _ast.Token(_tokenKind.TokenKind.SPREAD, pos, pos + 3, _line, _col, prev);
-        }
-
-        break;
-
-      case 58:
-        //  :
-        return new _ast.Token(_tokenKind.TokenKind.COLON, pos, pos + 1, _line, _col, prev);
-
-      case 61:
-        //  =
-        return new _ast.Token(_tokenKind.TokenKind.EQUALS, pos, pos + 1, _line, _col, prev);
-
-      case 64:
-        //  @
-        return new _ast.Token(_tokenKind.TokenKind.AT, pos, pos + 1, _line, _col, prev);
-
-      case 91:
-        //  [
-        return new _ast.Token(_tokenKind.TokenKind.BRACKET_L, pos, pos + 1, _line, _col, prev);
-
-      case 93:
-        //  ]
-        return new _ast.Token(_tokenKind.TokenKind.BRACKET_R, pos, pos + 1, _line, _col, prev);
-
-      case 123:
-        // {
-        return new _ast.Token(_tokenKind.TokenKind.BRACE_L, pos, pos + 1, _line, _col, prev);
-
-      case 124:
-        // |
-        return new _ast.Token(_tokenKind.TokenKind.PIPE, pos, pos + 1, _line, _col, prev);
-
-      case 125:
-        // }
-        return new _ast.Token(_tokenKind.TokenKind.BRACE_R, pos, pos + 1, _line, _col, prev);
-
-      case 34:
-        //  "
-        if (body.charCodeAt(pos + 1) === 34 && body.charCodeAt(pos + 2) === 34) {
-          return readBlockString(source, pos, _line, _col, prev, lexer);
-        }
-
-        return readString(source, pos, _line, _col, prev);
-
-      case 45: //  -
-
-      case 48: //  0
-
-      case 49: //  1
-
-      case 50: //  2
-
-      case 51: //  3
-
-      case 52: //  4
-
-      case 53: //  5
-
-      case 54: //  6
-
-      case 55: //  7
-
-      case 56: //  8
-
-      case 57:
-        //  9
-        return readNumber(source, pos, code, _line, _col, prev);
-
-      case 65: //  A
-
-      case 66: //  B
-
-      case 67: //  C
-
-      case 68: //  D
-
-      case 69: //  E
-
-      case 70: //  F
-
-      case 71: //  G
-
-      case 72: //  H
-
-      case 73: //  I
-
-      case 74: //  J
-
-      case 75: //  K
-
-      case 76: //  L
-
-      case 77: //  M
-
-      case 78: //  N
-
-      case 79: //  O
-
-      case 80: //  P
-
-      case 81: //  Q
-
-      case 82: //  R
-
-      case 83: //  S
-
-      case 84: //  T
-
-      case 85: //  U
-
-      case 86: //  V
-
-      case 87: //  W
-
-      case 88: //  X
-
-      case 89: //  Y
-
-      case 90: //  Z
-
-      case 95: //  _
-
-      case 97: //  a
-
-      case 98: //  b
-
-      case 99: //  c
-
-      case 100: // d
-
-      case 101: // e
-
-      case 102: // f
-
-      case 103: // g
-
-      case 104: // h
-
-      case 105: // i
-
-      case 106: // j
-
-      case 107: // k
-
-      case 108: // l
-
-      case 109: // m
-
-      case 110: // n
-
-      case 111: // o
-
-      case 112: // p
-
-      case 113: // q
-
-      case 114: // r
-
-      case 115: // s
-
-      case 116: // t
-
-      case 117: // u
-
-      case 118: // v
-
-      case 119: // w
-
-      case 120: // x
-
-      case 121: // y
-
-      case 122:
-        // z
-        return readName(source, pos, _line, _col, prev);
-    }
-
-    throw (0, _syntaxError.syntaxError)(source, pos, unexpectedCharacterMessage(code));
-  }
-
+  var pos = positionAfterWhitespace(body, prev.end, lexer);
   var line = lexer.line;
   var col = 1 + pos - lexer.lineStart;
-  return new _ast.Token(_tokenKind.TokenKind.EOF, bodyLength, bodyLength, line, col, prev);
+
+  if (pos >= bodyLength) {
+    return new _ast.Token(_tokenKind.TokenKind.EOF, bodyLength, bodyLength, line, col, prev);
+  }
+
+  var code = body.charCodeAt(pos); // SourceCharacter
+
+  switch (code) {
+    // !
+    case 33:
+      return new _ast.Token(_tokenKind.TokenKind.BANG, pos, pos + 1, line, col, prev);
+    // #
+
+    case 35:
+      return readComment(source, pos, line, col, prev);
+    // $
+
+    case 36:
+      return new _ast.Token(_tokenKind.TokenKind.DOLLAR, pos, pos + 1, line, col, prev);
+    // &
+
+    case 38:
+      return new _ast.Token(_tokenKind.TokenKind.AMP, pos, pos + 1, line, col, prev);
+    // (
+
+    case 40:
+      return new _ast.Token(_tokenKind.TokenKind.PAREN_L, pos, pos + 1, line, col, prev);
+    // )
+
+    case 41:
+      return new _ast.Token(_tokenKind.TokenKind.PAREN_R, pos, pos + 1, line, col, prev);
+    // .
+
+    case 46:
+      if (body.charCodeAt(pos + 1) === 46 && body.charCodeAt(pos + 2) === 46) {
+        return new _ast.Token(_tokenKind.TokenKind.SPREAD, pos, pos + 3, line, col, prev);
+      }
+
+      break;
+    // :
+
+    case 58:
+      return new _ast.Token(_tokenKind.TokenKind.COLON, pos, pos + 1, line, col, prev);
+    // =
+
+    case 61:
+      return new _ast.Token(_tokenKind.TokenKind.EQUALS, pos, pos + 1, line, col, prev);
+    // @
+
+    case 64:
+      return new _ast.Token(_tokenKind.TokenKind.AT, pos, pos + 1, line, col, prev);
+    // [
+
+    case 91:
+      return new _ast.Token(_tokenKind.TokenKind.BRACKET_L, pos, pos + 1, line, col, prev);
+    // ]
+
+    case 93:
+      return new _ast.Token(_tokenKind.TokenKind.BRACKET_R, pos, pos + 1, line, col, prev);
+    // {
+
+    case 123:
+      return new _ast.Token(_tokenKind.TokenKind.BRACE_L, pos, pos + 1, line, col, prev);
+    // |
+
+    case 124:
+      return new _ast.Token(_tokenKind.TokenKind.PIPE, pos, pos + 1, line, col, prev);
+    // }
+
+    case 125:
+      return new _ast.Token(_tokenKind.TokenKind.BRACE_R, pos, pos + 1, line, col, prev);
+    // A-Z _ a-z
+
+    case 65:
+    case 66:
+    case 67:
+    case 68:
+    case 69:
+    case 70:
+    case 71:
+    case 72:
+    case 73:
+    case 74:
+    case 75:
+    case 76:
+    case 77:
+    case 78:
+    case 79:
+    case 80:
+    case 81:
+    case 82:
+    case 83:
+    case 84:
+    case 85:
+    case 86:
+    case 87:
+    case 88:
+    case 89:
+    case 90:
+    case 95:
+    case 97:
+    case 98:
+    case 99:
+    case 100:
+    case 101:
+    case 102:
+    case 103:
+    case 104:
+    case 105:
+    case 106:
+    case 107:
+    case 108:
+    case 109:
+    case 110:
+    case 111:
+    case 112:
+    case 113:
+    case 114:
+    case 115:
+    case 116:
+    case 117:
+    case 118:
+    case 119:
+    case 120:
+    case 121:
+    case 122:
+      return readName(source, pos, line, col, prev);
+    // - 0-9
+
+    case 45:
+    case 48:
+    case 49:
+    case 50:
+    case 51:
+    case 52:
+    case 53:
+    case 54:
+    case 55:
+    case 56:
+    case 57:
+      return readNumber(source, pos, code, line, col, prev);
+    // "
+
+    case 34:
+      if (body.charCodeAt(pos + 1) === 34 && body.charCodeAt(pos + 2) === 34) {
+        return readBlockString(source, pos, line, col, prev, lexer);
+      }
+
+      return readString(source, pos, line, col, prev);
+  }
+
+  throw (0, _syntaxError.syntaxError)(source, pos, unexpectedCharacterMessage(code));
 }
 /**
  * Report a message that an unexpected character was encountered.
@@ -10365,6 +10314,43 @@ function unexpectedCharacterMessage(code) {
   }
 
   return "Cannot parse the unexpected character ".concat(printCharCode(code), ".");
+}
+/**
+ * Reads from body starting at startPosition until it finds a non-whitespace
+ * character, then returns the position of that character for lexing.
+ */
+
+
+function positionAfterWhitespace(body, startPosition, lexer) {
+  var bodyLength = body.length;
+  var position = startPosition;
+
+  while (position < bodyLength) {
+    var code = body.charCodeAt(position); // tab | space | comma | BOM
+
+    if (code === 9 || code === 32 || code === 44 || code === 0xfeff) {
+      ++position;
+    } else if (code === 10) {
+      // new line
+      ++position;
+      ++lexer.line;
+      lexer.lineStart = position;
+    } else if (code === 13) {
+      // carriage return
+      if (body.charCodeAt(position + 1) === 10) {
+        position += 2;
+      } else {
+        ++position;
+      }
+
+      ++lexer.line;
+      lexer.lineStart = position;
+    } else {
+      break;
+    }
+  }
+
+  return position;
 }
 /**
  * Reads a comment token from the source file.
@@ -10728,7 +10714,10 @@ Object.defineProperty(exports, "__esModule", ({
 exports.parse = parse;
 exports.parseValue = parseValue;
 exports.parseType = parseType;
-exports.Parser = void 0;
+
+var _inspect = _interopRequireDefault(__webpack_require__(102));
+
+var _devAssert = _interopRequireDefault(__webpack_require__(6514));
 
 var _syntaxError = __webpack_require__(2295);
 
@@ -10736,13 +10725,15 @@ var _kinds = __webpack_require__(1927);
 
 var _ast = __webpack_require__(5494);
 
-var _tokenKind = __webpack_require__(1565);
-
 var _source = __webpack_require__(5521);
+
+var _tokenKind = __webpack_require__(1565);
 
 var _directiveLocation = __webpack_require__(1205);
 
 var _lexer = __webpack_require__(4605);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
  * Given a GraphQL source, parses it into a Document.
@@ -10790,22 +10781,11 @@ function parseType(source, options) {
   parser.expectToken(_tokenKind.TokenKind.EOF);
   return type;
 }
-/**
- * This class is exported only to assist people in implementing their own parsers
- * without duplicating too much code and should be used only as last resort for cases
- * such as experimental syntax or if certain features could not be contributed upstream.
- *
- * It is still part of the internal API and is versioned, so any changes to it are never
- * considered breaking changes. If you still need to support multiple versions of the
- * library, please use the `versionInfo` variable for version detection.
- *
- * @internal
- */
-
 
 var Parser = /*#__PURE__*/function () {
   function Parser(source, options) {
-    var sourceObj = (0, _source.isSource)(source) ? source : new _source.Source(source);
+    var sourceObj = typeof source === 'string' ? new _source.Source(source) : source;
+    sourceObj instanceof _source.Source || (0, _devAssert.default)(0, "Must provide Source. Received: ".concat((0, _inspect.default)(sourceObj), "."));
     this._lexer = new _lexer.Lexer(sourceObj);
     this._options = options;
   }
@@ -11550,25 +11530,21 @@ var Parser = /*#__PURE__*/function () {
   ;
 
   _proto.parseImplementsInterfaces = function parseImplementsInterfaces() {
-    var _this$_options2;
+    var types = [];
 
-    if (!this.expectOptionalKeyword('implements')) {
-      return [];
-    }
-
-    if (((_this$_options2 = this._options) === null || _this$_options2 === void 0 ? void 0 : _this$_options2.allowLegacySDLImplementsInterfaces) === true) {
-      var types = []; // Optional leading ampersand
-
+    if (this.expectOptionalKeyword('implements')) {
+      // Optional leading ampersand
       this.expectOptionalToken(_tokenKind.TokenKind.AMP);
 
       do {
-        types.push(this.parseNamedType());
-      } while (this.expectOptionalToken(_tokenKind.TokenKind.AMP) || this.peek(_tokenKind.TokenKind.NAME));
+        var _this$_options2;
 
-      return types;
+        types.push(this.parseNamedType());
+      } while (this.expectOptionalToken(_tokenKind.TokenKind.AMP) || // Legacy support for the SDL?
+      ((_this$_options2 = this._options) === null || _this$_options2 === void 0 ? void 0 : _this$_options2.allowLegacySDLImplementsInterfaces) === true && this.peek(_tokenKind.TokenKind.NAME));
     }
 
-    return this.delimitedMany(_tokenKind.TokenKind.AMP, this.parseNamedType);
+    return types;
   }
   /**
    * FieldsDefinition : { FieldDefinition+ }
@@ -11704,7 +11680,18 @@ var Parser = /*#__PURE__*/function () {
   ;
 
   _proto.parseUnionMemberTypes = function parseUnionMemberTypes() {
-    return this.expectOptionalToken(_tokenKind.TokenKind.EQUALS) ? this.delimitedMany(_tokenKind.TokenKind.PIPE, this.parseNamedType) : [];
+    var types = [];
+
+    if (this.expectOptionalToken(_tokenKind.TokenKind.EQUALS)) {
+      // Optional leading pipe
+      this.expectOptionalToken(_tokenKind.TokenKind.PIPE);
+
+      do {
+        types.push(this.parseNamedType());
+      } while (this.expectOptionalToken(_tokenKind.TokenKind.PIPE));
+    }
+
+    return types;
   }
   /**
    * EnumTypeDefinition :
@@ -12055,7 +12042,15 @@ var Parser = /*#__PURE__*/function () {
   ;
 
   _proto.parseDirectiveLocations = function parseDirectiveLocations() {
-    return this.delimitedMany(_tokenKind.TokenKind.PIPE, this.parseDirectiveLocation);
+    // Optional leading pipe
+    this.expectOptionalToken(_tokenKind.TokenKind.PIPE);
+    var locations = [];
+
+    do {
+      locations.push(this.parseDirectiveLocation());
+    } while (this.expectOptionalToken(_tokenKind.TokenKind.PIPE));
+
+    return locations;
   }
   /*
    * DirectiveLocation :
@@ -12098,7 +12093,8 @@ var Parser = /*#__PURE__*/function () {
   } // Core parsing utility functions
 
   /**
-   * Returns a location object, used to identify the place in the source that created a given parsed object.
+   * Returns a location object, used to identify the place in
+   * the source that created a given parsed object.
    */
   ;
 
@@ -12118,8 +12114,8 @@ var Parser = /*#__PURE__*/function () {
     return this._lexer.token.kind === kind;
   }
   /**
-   * If the next token is of the given kind, return that token after advancing the lexer.
-   * Otherwise, do not change the parser state and throw an error.
+   * If the next token is of the given kind, return that token after advancing
+   * the lexer. Otherwise, do not change the parser state and throw an error.
    */
   ;
 
@@ -12135,8 +12131,8 @@ var Parser = /*#__PURE__*/function () {
     throw (0, _syntaxError.syntaxError)(this._lexer.source, token.start, "Expected ".concat(getTokenKindDesc(kind), ", found ").concat(getTokenDesc(token), "."));
   }
   /**
-   * If the next token is of the given kind, return that token after advancing the lexer.
-   * Otherwise, do not change the parser state and return undefined.
+   * If the next token is of the given kind, return that token after advancing
+   * the lexer. Otherwise, do not change the parser state and return undefined.
    */
   ;
 
@@ -12167,8 +12163,8 @@ var Parser = /*#__PURE__*/function () {
     }
   }
   /**
-   * If the next token is a given keyword, return "true" after advancing the lexer.
-   * Otherwise, do not change the parser state and return "false".
+   * If the next token is a given keyword, return "true" after advancing
+   * the lexer. Otherwise, do not change the parser state and return "false".
    */
   ;
 
@@ -12184,7 +12180,8 @@ var Parser = /*#__PURE__*/function () {
     return false;
   }
   /**
-   * Helper function for creating an error when an unexpected lexed token is encountered.
+   * Helper function for creating an error when an unexpected lexed token
+   * is encountered.
    */
   ;
 
@@ -12193,9 +12190,10 @@ var Parser = /*#__PURE__*/function () {
     return (0, _syntaxError.syntaxError)(this._lexer.source, token.start, "Unexpected ".concat(getTokenDesc(token), "."));
   }
   /**
-   * Returns a possibly empty list of parse nodes, determined by the parseFn.
-   * This list begins with a lex token of openKind and ends with a lex token of closeKind.
-   * Advances the parser to the next lex token after the closing token.
+   * Returns a possibly empty list of parse nodes, determined by
+   * the parseFn. This list begins with a lex token of openKind
+   * and ends with a lex token of closeKind. Advances the parser
+   * to the next lex token after the closing token.
    */
   ;
 
@@ -12211,9 +12209,10 @@ var Parser = /*#__PURE__*/function () {
   }
   /**
    * Returns a list of parse nodes, determined by the parseFn.
-   * It can be empty only if open token is missing otherwise it will always return non-empty list
-   * that begins with a lex token of openKind and ends with a lex token of closeKind.
-   * Advances the parser to the next lex token after the closing token.
+   * It can be empty only if open token is missing otherwise it will always
+   * return non-empty list that begins with a lex token of openKind and ends
+   * with a lex token of closeKind. Advances the parser to the next lex token
+   * after the closing token.
    */
   ;
 
@@ -12231,9 +12230,10 @@ var Parser = /*#__PURE__*/function () {
     return [];
   }
   /**
-   * Returns a non-empty list of parse nodes, determined by the parseFn.
-   * This list begins with a lex token of openKind and ends with a lex token of closeKind.
-   * Advances the parser to the next lex token after the closing token.
+   * Returns a non-empty list of parse nodes, determined by
+   * the parseFn. This list begins with a lex token of openKind
+   * and ends with a lex token of closeKind. Advances the parser
+   * to the next lex token after the closing token.
    */
   ;
 
@@ -12246,40 +12246,21 @@ var Parser = /*#__PURE__*/function () {
     } while (!this.expectOptionalToken(closeKind));
 
     return nodes;
-  }
-  /**
-   * Returns a non-empty list of parse nodes, determined by the parseFn.
-   * This list may begin with a lex token of delimiterKind followed by items separated by lex tokens of tokenKind.
-   * Advances the parser to the next lex token after last item in the list.
-   */
-  ;
-
-  _proto.delimitedMany = function delimitedMany(delimiterKind, parseFn) {
-    this.expectOptionalToken(delimiterKind);
-    var nodes = [];
-
-    do {
-      nodes.push(parseFn.call(this));
-    } while (this.expectOptionalToken(delimiterKind));
-
-    return nodes;
   };
 
   return Parser;
 }();
 /**
- * A helper function to describe a token as a string for debugging.
+ * A helper function to describe a token as a string for debugging
  */
 
-
-exports.Parser = Parser;
 
 function getTokenDesc(token) {
   var value = token.value;
   return getTokenKindDesc(token.kind) + (value != null ? " \"".concat(value, "\"") : '');
 }
 /**
- * A helper function to describe a token kind as a string for debugging.
+ * A helper function to describe a token kind as a string for debugging
  */
 
 
@@ -12382,16 +12363,11 @@ function leftPad(len, str) {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.isSource = isSource;
 exports.Source = void 0;
 
 var _symbols = __webpack_require__(3255);
 
-var _inspect = _interopRequireDefault(__webpack_require__(102));
-
 var _devAssert = _interopRequireDefault(__webpack_require__(6514));
-
-var _instanceOf = _interopRequireDefault(__webpack_require__(3481));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -12413,13 +12389,12 @@ var Source = /*#__PURE__*/function () {
       line: 1,
       column: 1
     };
-    typeof body === 'string' || (0, _devAssert.default)(0, "Body must be a string. Received: ".concat((0, _inspect.default)(body), "."));
     this.body = body;
     this.name = name;
     this.locationOffset = locationOffset;
     this.locationOffset.line > 0 || (0, _devAssert.default)(0, 'line in locationOffset is 1-indexed and must be positive.');
     this.locationOffset.column > 0 || (0, _devAssert.default)(0, 'column in locationOffset is 1-indexed and must be positive.');
-  } // $FlowFixMe[unsupported-syntax] Flow doesn't support computed properties yet
+  } // $FlowFixMe Flow doesn't support computed properties yet
 
 
   _createClass(Source, [{
@@ -12431,19 +12406,8 @@ var Source = /*#__PURE__*/function () {
 
   return Source;
 }();
-/**
- * Test if the given value is a Source object.
- *
- * @internal
- */
-
 
 exports.Source = Source;
-
-// eslint-disable-next-line no-redeclare
-function isSource(source) {
-  return (0, _instanceOf.default)(source, Source);
-}
 
 
 /***/ }),
@@ -12508,61 +12472,17 @@ Object.defineProperty(exports, "__esModule", ({
 exports.SYMBOL_TO_STRING_TAG = exports.SYMBOL_ASYNC_ITERATOR = exports.SYMBOL_ITERATOR = void 0;
 // In ES2015 (or a polyfilled) environment, this will be Symbol.iterator
 // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
-var SYMBOL_ITERATOR = typeof Symbol === 'function' && Symbol.iterator != null ? Symbol.iterator : '@@iterator'; // In ES2017 (or a polyfilled) environment, this will be Symbol.asyncIterator
+var SYMBOL_ITERATOR = typeof Symbol === 'function' ? Symbol.iterator : '@@iterator'; // In ES2017 (or a polyfilled) environment, this will be Symbol.asyncIterator
 // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
 
 exports.SYMBOL_ITERATOR = SYMBOL_ITERATOR;
-var SYMBOL_ASYNC_ITERATOR = typeof Symbol === 'function' && Symbol.asyncIterator != null ? Symbol.asyncIterator : '@@asyncIterator'; // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
+var SYMBOL_ASYNC_ITERATOR = // $FlowFixMe Flow doesn't define `Symbol.asyncIterator` yet
+typeof Symbol === 'function' ? Symbol.asyncIterator : '@@asyncIterator'; // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2317')
 
 exports.SYMBOL_ASYNC_ITERATOR = SYMBOL_ASYNC_ITERATOR;
-var SYMBOL_TO_STRING_TAG = typeof Symbol === 'function' && Symbol.toStringTag != null ? Symbol.toStringTag : '@@toStringTag';
+var SYMBOL_TO_STRING_TAG = // $FlowFixMe Flow doesn't define `Symbol.toStringTag` yet
+typeof Symbol === 'function' ? Symbol.toStringTag : '@@toStringTag';
 exports.SYMBOL_TO_STRING_TAG = SYMBOL_TO_STRING_TAG;
-
-
-/***/ }),
-
-/***/ 3287:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-/*!
- * is-plain-object <https://github.com/jonschlinkert/is-plain-object>
- *
- * Copyright (c) 2014-2017, Jon Schlinkert.
- * Released under the MIT License.
- */
-
-function isObject(o) {
-  return Object.prototype.toString.call(o) === '[object Object]';
-}
-
-function isPlainObject(o) {
-  var ctor,prot;
-
-  if (isObject(o) === false) return false;
-
-  // If has modified constructor
-  ctor = o.constructor;
-  if (ctor === undefined) return true;
-
-  // If has modified prototype
-  prot = ctor.prototype;
-  if (isObject(prot) === false) return false;
-
-  // If constructor does not have an Object-specific method
-  if (prot.hasOwnProperty('isPrototypeOf') === false) {
-    return false;
-  }
-
-  // Most likely a plain Object
-  return true;
-}
-
-exports.isPlainObject = isPlainObject;
 
 
 /***/ }),
@@ -14795,7 +14715,7 @@ module.exports = JSON.parse("[[\"0\",\"\\u0000\",128],[\"a1\",\"｡\",62],[\"814
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("assert");;
+module.exports = require("assert");
 
 /***/ }),
 
@@ -14803,7 +14723,7 @@ module.exports = require("assert");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("buffer");;
+module.exports = require("buffer");
 
 /***/ }),
 
@@ -14811,7 +14731,7 @@ module.exports = require("buffer");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("events");;
+module.exports = require("events");
 
 /***/ }),
 
@@ -14819,7 +14739,7 @@ module.exports = require("events");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("fs");;
+module.exports = require("fs");
 
 /***/ }),
 
@@ -14827,7 +14747,7 @@ module.exports = require("fs");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("http");;
+module.exports = require("http");
 
 /***/ }),
 
@@ -14835,7 +14755,7 @@ module.exports = require("http");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("https");;
+module.exports = require("https");
 
 /***/ }),
 
@@ -14843,7 +14763,7 @@ module.exports = require("https");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("net");;
+module.exports = require("net");
 
 /***/ }),
 
@@ -14851,7 +14771,7 @@ module.exports = require("net");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("os");;
+module.exports = require("os");
 
 /***/ }),
 
@@ -14859,7 +14779,7 @@ module.exports = require("os");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("path");;
+module.exports = require("path");
 
 /***/ }),
 
@@ -14867,7 +14787,7 @@ module.exports = require("path");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("stream");;
+module.exports = require("stream");
 
 /***/ }),
 
@@ -14875,7 +14795,7 @@ module.exports = require("stream");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("string_decoder");;
+module.exports = require("string_decoder");
 
 /***/ }),
 
@@ -14883,7 +14803,7 @@ module.exports = require("string_decoder");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("tls");;
+module.exports = require("tls");
 
 /***/ }),
 
@@ -14891,7 +14811,7 @@ module.exports = require("tls");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("url");;
+module.exports = require("url");
 
 /***/ }),
 
@@ -14899,7 +14819,7 @@ module.exports = require("url");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("util");;
+module.exports = require("util");
 
 /***/ }),
 
@@ -14907,7 +14827,7 @@ module.exports = require("util");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("zlib");;
+module.exports = require("zlib");
 
 /***/ })
 
