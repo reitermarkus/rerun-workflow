@@ -35,7 +35,7 @@
     "@graphql-codegen/typescript": "^1.19.0",
     "@graphql-codegen/typescript-document-nodes": "^1.14.0",
     "@graphql-codegen/typescript-operations": "^1.17.10",
-    "@graphql-codegen/typescript-resolvers": "^1.17.11",
+    "@graphql-codegen/typescript-resolvers": "^1.18.0",
     "@octokit/graphql-schema": "^10.7.0",
     "@octokit/types": "^5.5.0",
     "@types/jest": "^26.0.15",
