@@ -28,7 +28,7 @@
   "dependencies": {
     "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0",
-    "ts-is-present": "^1.1.5"
+    "ts-is-present": "^1.2.1"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "1.19.4",
