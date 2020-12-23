@@ -19,7 +19,12 @@ export function isSuccessfulOrCancelled(workflowRun: WorkflowRun): boolean {
 function latestWorkflowRunForEvent(workflowRuns: WorkflowRun[], event: string): WorkflowRun | null {
   return workflowRuns
     .filter(w => w.event === event)
-    .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))[0]
+    .sort((a, b) => {
+      const updatedA = a.updated_at
+      const updatedB = b.updated_at
+
+      return updatedA && updatedB ? Date.parse(updatedB) - Date.parse(updatedA) : 0
+    })[0]
 }
 
 /// Returns the workflow run for the latest commit of a pull request.
@@ -73,12 +78,15 @@ export async function pullRequestsForWorkflowRun(
     const headRepo = workflowRun.head_repository
     const headBranch = workflowRun.head_branch
     const headSha = workflowRun.head_sha
+    const headRepoOwner = headRepo.owner?.login
+
+    if (!headRepoOwner) return []
 
     pullRequests = (
       await octokit.pulls.list({
         ...github.context.repo,
         state: 'open',
-        head: `${headRepo.owner.login}:${headBranch}`,
+        head: `${headRepoOwner}:${headBranch}`,
         sort: 'updated',
         direction: 'desc',
         per_page: 100,

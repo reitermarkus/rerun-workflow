@@ -1,9 +1,10 @@
 import * as github from '@actions/github'
-import { ActionsListWorkflowRunsResponseData, PullsGetResponseData } from '@octokit/types'
+import { components as OCTOKIT_OPENAPI_TYPES } from '@octokit/openapi-types'
 
 export type Octokit = ReturnType<typeof github.getOctokit>
-export type PullRequest = PullsGetResponseData
-export type WorkflowRun = ActionsListWorkflowRunsResponseData['workflow_runs'][0]
+
+export type PullRequest = OCTOKIT_OPENAPI_TYPES['schemas']['pull-request']
+export type WorkflowRun = OCTOKIT_OPENAPI_TYPES['schemas']['workflow-run']
 
 export enum RerunCondition {
   // Always re-run unless already queued or in progress.
