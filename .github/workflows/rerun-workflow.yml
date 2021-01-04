@@ -24,11 +24,20 @@ jobs:
           cat <<-'EOF'
             ${{ toJSON(github.event) }}
           EOF
+
       - uses: actions/checkout@v2
+
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@36464acb844fc53b9b8b2401da68844f6b05ebb0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_KEY }}
+
       - name: Re-run pull request workflows
         uses: ./
         with:
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
+          token: ${{ steps.generate_token.outputs.token }}
           once-label: ci-requeue
           continuous-label: ci-retry
           trigger-labels: ci-trigger
