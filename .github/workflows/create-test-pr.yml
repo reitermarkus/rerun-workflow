@@ -36,3 +36,4 @@ jobs:
           title: Test Pull Request (${{ steps.changes.outputs.number }})
           commit-message: Test commit.
           branch: test-pr-${{ steps.changes.outputs.number }}
+          labels: make-pr-fail
