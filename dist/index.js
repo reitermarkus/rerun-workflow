@@ -1740,7 +1740,7 @@ function rerunWorkflow(octokit, id) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.info(`Triggering re-run for workflow run ${id}…`);
-            yield octokit.actions.reRunWorkflow(Object.assign(Object.assign({}, github.context.repo), { run_id: id }));
+            yield octokit.actions.reRunWorkflow(Object.assign(Object.assign({}, github.context.repo), { run_id: `${id}` }));
             core.info(`Re-run of workflow run ${id} successfully started.`);
         }
         catch (err) {

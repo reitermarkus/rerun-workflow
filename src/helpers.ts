@@ -104,7 +104,7 @@ export async function rerunWorkflow(octokit: Octokit, id: number): Promise<void>
     core.info(`Triggering re-run for workflow run ${id}…`)
     await octokit.actions.reRunWorkflow({
       ...github.context.repo,
-      run_id: id,
+      run_id: `${id}` as any,
     })
     core.info(`Re-run of workflow run ${id} successfully started.`)
   } catch (err) {
