@@ -19,10 +19,12 @@ jobs:
       - uses: peter-evans/find-comment@v1
         id: find-comment
         with:
+          token: ${{ steps.generate_token.outputs.token }}
           issue-number: ${{ github.event.pull_request.number }}
           body-includes: '@dependabot merge'
       - uses: peter-evans/create-or-update-comment@v1
         with:
+          token: ${{ steps.generate_token.outputs.token }}
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: '@dependabot merge'
