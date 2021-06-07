@@ -31,7 +31,7 @@
     "ts-is-present": "^1.2.1"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "1.21.4",
+    "@graphql-codegen/cli": "1.21.5",
     "@graphql-codegen/typescript": "^1.22.1",
     "@graphql-codegen/typescript-document-nodes": "^1.17.11",
     "@graphql-codegen/typescript-operations": "^1.17.16",
@@ -42,7 +42,7 @@
     "@types/jest": "^26.0.23",
     "@types/node": "^15.6.1",
     "@typescript-eslint/eslint-plugin": "^4.24.0",
-    "@typescript-eslint/parser": "^4.25.0",
+    "@typescript-eslint/parser": "^4.26.0",
     "@vercel/ncc": "^0.28.5",
     "eslint": "^7.27.0",
     "eslint-plugin-github": "^4.1.3",
