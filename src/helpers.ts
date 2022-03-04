@@ -99,16 +99,16 @@ export async function pullRequestsForWorkflowRun(
   return pullRequests
 }
 
-export async function rerunWorkflow(octokit: Octokit, id: number): Promise<void> {
+export async function rerunWorkflow(octokit: Octokit, workflowRun: WorkflowRun): Promise<void> {
   try {
-    core.info(`Triggering re-run for workflow run ${id}…`)
-    await octokit.rest.checks.rerequestRun({
+    core.info(`Triggering re-run for workflow run ${workflowRun.id}…`)
+    await octokit.rest.checks.rerequestSuite({
       ...github.context.repo,
-      check_run_id: id,
+      check_suite_id: workflowRun.check_suite_id!,
     })
-    core.info(`Re-run of workflow run ${id} successfully started.`)
+    core.info(`Re-run of workflow run ${workflowRun.id} successfully started.`)
   } catch (err) {
-    core.setFailed(`Re-running workflow run ${id} failed: ${err}`)
+    core.setFailed(`Re-running workflow run ${workflowRun.id} failed: ${err}`)
   }
 }
 

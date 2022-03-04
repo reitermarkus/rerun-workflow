@@ -1916,15 +1916,15 @@ function pullRequestsForWorkflowRun(octokit, workflowRun) {
     });
 }
 exports.pullRequestsForWorkflowRun = pullRequestsForWorkflowRun;
-function rerunWorkflow(octokit, id) {
+function rerunWorkflow(octokit, workflowRun) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.info(`Triggering re-run for workflow run ${id}…`);
-            yield octokit.rest.checks.rerequestRun(Object.assign(Object.assign({}, github.context.repo), { check_run_id: id }));
-            core.info(`Re-run of workflow run ${id} successfully started.`);
+            core.info(`Triggering re-run for workflow run ${workflowRun.id}…`);
+            yield octokit.rest.checks.rerequestSuite(Object.assign(Object.assign({}, github.context.repo), { check_suite_id: workflowRun.check_suite_id }));
+            core.info(`Re-run of workflow run ${workflowRun.id} successfully started.`);
         }
         catch (err) {
-            core.setFailed(`Re-running workflow run ${id} failed: ${err}`);
+            core.setFailed(`Re-running workflow run ${workflowRun.id} failed: ${err}`);
         }
     });
 }
@@ -2106,14 +2106,14 @@ class RerunWorkflowAction {
                                 break;
                             }
                             case types_1.RerunCondition.Always: {
-                                yield (0, helpers_1.rerunWorkflow)(octokit, workflowRun.id);
+                                yield (0, helpers_1.rerunWorkflow)(octokit, workflowRun);
                                 reruns += 1;
                                 break;
                             }
                             case types_1.RerunCondition.OnFailure: {
                                 switch (workflowRun.conclusion) {
                                     case 'failure': {
-                                        yield (0, helpers_1.rerunWorkflow)(octokit, workflowRun.id);
+                                        yield (0, helpers_1.rerunWorkflow)(octokit, workflowRun);
                                         reruns += 1;
                                         break;
                                     }

@@ -81,14 +81,14 @@ class RerunWorkflowAction {
               break
             }
             case RerunCondition.Always: {
-              await rerunWorkflow(octokit, workflowRun.id)
+              await rerunWorkflow(octokit, workflowRun)
               reruns += 1
               break
             }
             case RerunCondition.OnFailure: {
               switch (workflowRun.conclusion) {
                 case 'failure': {
-                  await rerunWorkflow(octokit, workflowRun.id)
+                  await rerunWorkflow(octokit, workflowRun)
                   reruns += 1
                   break
                 }
