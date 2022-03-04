@@ -7,7 +7,7 @@ import { Octokit, PullRequest, WorkflowRun } from './types'
 export const PULL_REQUEST_EVENTS = ['pull_request', 'pull_request_target']
 
 export async function getPullRequest(octokit: Octokit, number: number): Promise<PullRequest> {
-  const response = await octokit.pulls.get({ ...github.context.repo, pull_number: number })
+  const response = await octokit.rest.pulls.get({ ...github.context.repo, pull_number: number })
   return response.data
 }
 
@@ -35,7 +35,7 @@ export async function latestWorkflowRunsForPullRequest(
 ): Promise<WorkflowRun[]> {
   core.info(`Searching workflows for pull request ${pullRequest.number}…`)
 
-  const response = await octokit.actions.listWorkflowRuns({
+  const response = await octokit.rest.actions.listWorkflowRuns({
     ...github.context.repo,
     // Workflow ID can be a string or a number.
     workflow_id: workflow as any, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -83,7 +83,7 @@ export async function pullRequestsForWorkflowRun(
     if (!headRepoOwner) return []
 
     pullRequests = (
-      await octokit.pulls.list({
+      await octokit.rest.pulls.list({
         ...github.context.repo,
         state: 'open',
         head: `${headRepoOwner}:${headBranch}`,
@@ -102,9 +102,9 @@ export async function pullRequestsForWorkflowRun(
 export async function rerunWorkflow(octokit: Octokit, id: number): Promise<void> {
   try {
     core.info(`Triggering re-run for workflow run ${id}…`)
-    await octokit.actions.reRunWorkflow({
+    await octokit.rest.checks.rerequestRun({
       ...github.context.repo,
-      run_id: id,
+      check_run_id: id,
     })
     core.info(`Re-run of workflow run ${id} successfully started.`)
   } catch (err) {
@@ -123,7 +123,7 @@ export async function removeLabelFromPullRequest(octokit: Octokit, pullRequest: 
 
   try {
     core.info(`Removing '${label}' label from pull request ${number}…`)
-    await octokit.issues.removeLabel({
+    await octokit.rest.issues.removeLabel({
       ...github.context.repo,
       issue_number: number,
       name: label,
