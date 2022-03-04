@@ -28,7 +28,7 @@ jobs:
       - name: Re-run pull request workflows
         uses: ./
         with:
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
           once-label: ci-requeue
           continuous-label: ci-retry
           trigger-labels: ci-trigger
