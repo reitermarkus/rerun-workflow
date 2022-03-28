@@ -30,7 +30,7 @@ jobs:
 
       - name: Create pull request
         id: create-pull-request
-        uses: peter-evans/create-pull-request@252fb19db2e7e1916698d4cfffd2c4509f43a3b2
+        uses: peter-evans/create-pull-request@0dfc93c1049996241252d9dc45a270b7c12dec6b
         with:
           token: ${{ steps.generate_token.outputs.token }}
           title: Test Pull Request (${{ steps.changes.outputs.number }})
