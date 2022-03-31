@@ -69,8 +69,3 @@ jobs:
           trigger-labels: ci-trigger-1,ci-trigger-2
           workflow: ci.yml
 ```
-
-
-## Known Issues
-
-- It is not currently possible to re-run a workflow which already completed successfully.
