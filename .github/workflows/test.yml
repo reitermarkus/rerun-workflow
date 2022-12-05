@@ -11,16 +11,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: |
-          npm install
-      - run: |
-          npm run all
+      - run: npm ci
+      - run: npm run all
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
+      - uses: actions/upload-artifact@v3
+        with:
+          name: action.yml
+          path: action.yml
   test: # make sure the action works on a clean machine without building
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
+      - uses: actions/download-artifact@v3
+        with:
+          name: action.yml
+          path: .
       - uses: ./
         with:
           token: ${{ github.token }}
           trigger-labels: does-not-exist
           workflow: pull-requests-fail.yml
+  package:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
+      - uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: Update distribution.
+          title: Update distribution.
+          body: |
+            Update the distribution with changes in `main` branch.
+          branch: update-distribution
