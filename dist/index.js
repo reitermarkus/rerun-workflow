@@ -10,10 +10,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.IssueClosedStateReason = exports.IpAllowListForInstalledAppsEnabledSettingValue = exports.IpAllowListEntryOrderField = exports.IpAllowListEnabledSettingValue = exports.IdentityProviderConfigurationState = exports.GitSignatureState = exports.GistPrivacy = exports.GistOrderField = exports.FundingPlatform = exports.FileViewedState = exports.EnterpriseUserDeployment = exports.EnterpriseUserAccountMembershipRole = exports.EnterpriseServerUserAccountsUploadSyncState = exports.EnterpriseServerUserAccountsUploadOrderField = exports.EnterpriseServerUserAccountOrderField = exports.EnterpriseServerUserAccountEmailOrderField = exports.EnterpriseServerInstallationOrderField = exports.EnterpriseMembersCanMakePurchasesSettingValue = exports.EnterpriseMembersCanCreateRepositoriesSettingValue = exports.EnterpriseMemberOrderField = exports.EnterpriseEnabledSettingValue = exports.EnterpriseEnabledDisabledSettingValue = exports.EnterpriseDefaultRepositoryPermissionSettingValue = exports.EnterpriseAllowPrivateRepositoryForkingPolicyValue = exports.EnterpriseAdministratorRole = exports.EnterpriseAdministratorInvitationOrderField = exports.DismissReason = exports.DiscussionPollOptionOrderField = exports.DiscussionOrderField = exports.DiffSide = exports.DeploymentStatusState = exports.DeploymentState = exports.DeploymentReviewState = exports.DeploymentProtectionRuleType = exports.DeploymentOrderField = exports.DependencyGraphEcosystem = exports.DefaultRepositoryPermissionField = exports.ContributionLevel = exports.ComparisonStatus = exports.CommitContributionOrderField = exports.CommentCannotUpdateReason = exports.CommentAuthorAssociation = exports.CollaboratorAffiliation = exports.CheckStatusState = exports.CheckRunType = exports.CheckRunState = exports.CheckConclusionState = exports.CheckAnnotationLevel = exports.AuditLogOrderField = exports.ActorType = void 0;
-exports.ProjectColumnPurpose = exports.ProjectCardState = exports.ProjectCardArchivedState = exports.PinnedDiscussionPattern = exports.PinnedDiscussionGradient = exports.PinnableItemType = exports.PatchStatus = exports.PackageVersionOrderField = exports.PackageType = exports.PackageOrderField = exports.PackageFileOrderField = exports.OrganizationOrderField = exports.OrganizationMigrationState = exports.OrganizationMembersCanCreateRepositoriesSettingValue = exports.OrganizationMemberRole = exports.OrganizationInvitationType = exports.OrganizationInvitationSource = exports.OrganizationInvitationRole = exports.OrgUpdateMemberRepositoryCreationPermissionAuditEntryVisibility = exports.OrgUpdateMemberAuditEntryPermission = exports.OrgUpdateDefaultRepositoryPermissionAuditEntryPermission = exports.OrgRemoveOutsideCollaboratorAuditEntryReason = exports.OrgRemoveOutsideCollaboratorAuditEntryMembershipType = exports.OrgRemoveMemberAuditEntryReason = exports.OrgRemoveMemberAuditEntryMembershipType = exports.OrgRemoveBillingManagerAuditEntryReason = exports.OrgEnterpriseOwnerOrderField = exports.OrgCreateAuditEntryBillingPlan = exports.OrgAddMemberAuditEntryPermission = exports.OrderDirection = exports.OperationType = exports.OauthApplicationCreateAuditEntryState = exports.OidcProviderType = exports.NotificationRestrictionSettingValue = exports.MilestoneState = exports.MilestoneOrderField = exports.MigrationState = exports.MigrationSourceType = exports.MergeableState = exports.MergeCommitTitle = exports.MergeCommitMessage = exports.MannequinOrderField = exports.LockReason = exports.LanguageOrderField = exports.LabelOrderField = exports.IssueTimelineItemsItemType = exports.IssueStateReason = exports.IssueState = exports.IssueOrderField = exports.IssueCommentOrderField = void 0;
-exports.RepositoryVulnerabilityAlertDependencyScope = exports.RepositoryVisibility = exports.RepositoryPrivacy = exports.RepositoryPermission = exports.RepositoryOrderField = exports.RepositoryMigrationOrderField = exports.RepositoryMigrationOrderDirection = exports.RepositoryLockReason = exports.RepositoryInvitationOrderField = exports.RepositoryInteractionLimitOrigin = exports.RepositoryInteractionLimitExpiry = exports.RepositoryInteractionLimit = exports.RepositoryContributionType = exports.RepositoryAffiliation = exports.ReportedContentClassifiers = exports.RepoRemoveMemberAuditEntryVisibility = exports.RepoDestroyAuditEntryVisibility = exports.RepoCreateAuditEntryVisibility = exports.RepoChangeMergeSettingAuditEntryMergeType = exports.RepoArchivedAuditEntryVisibility = exports.RepoAddMemberAuditEntryVisibility = exports.RepoAccessAuditEntryVisibility = exports.ReleaseOrderField = exports.RefOrderField = exports.ReactionOrderField = exports.ReactionContent = exports.PullRequestUpdateState = exports.PullRequestTimelineItemsItemType = exports.PullRequestState = exports.PullRequestReviewState = exports.PullRequestReviewEvent = exports.PullRequestReviewDecision = exports.PullRequestReviewCommentState = exports.PullRequestOrderField = exports.PullRequestMergeMethod = exports.ProjectV2WorkflowsOrderField = exports.ProjectV2ViewOrderField = exports.ProjectV2ViewLayout = exports.ProjectV2State = exports.ProjectV2SingleSelectFieldOptionColor = exports.ProjectV2OrderField = exports.ProjectV2ItemType = exports.ProjectV2ItemOrderField = exports.ProjectV2ItemFieldValueOrderField = exports.ProjectV2FieldType = exports.ProjectV2FieldOrderField = exports.ProjectV2CustomFieldType = exports.ProjectTemplate = exports.ProjectState = exports.ProjectOrderField = void 0;
-exports.PullRequestsWithLabels = exports.WorkflowRunOrderField = exports.VerifiableDomainOrderField = exports.UserStatusOrderField = exports.UserBlockDuration = exports.TrackedIssueStates = exports.TopicSuggestionDeclineReason = exports.TeamRole = exports.TeamRepositoryOrderField = exports.TeamPrivacy = exports.TeamOrderField = exports.TeamMembershipType = exports.TeamMemberRole = exports.TeamMemberOrderField = exports.TeamDiscussionOrderField = exports.TeamDiscussionCommentOrderField = exports.SubscriptionState = exports.StatusState = exports.StarOrderField = exports.SquashMergeCommitTitle = exports.SquashMergeCommitMessage = exports.SponsorshipPrivacy = exports.SponsorshipOrderField = exports.SponsorshipNewsletterOrderField = exports.SponsorsTierOrderField = exports.SponsorsListingFeaturedItemFeatureableType = exports.SponsorsGoalKind = exports.SponsorsCountryOrRegionCode = exports.SponsorsActivityPeriod = exports.SponsorsActivityOrderField = exports.SponsorsActivityAction = exports.SponsorableOrderField = exports.SponsorOrderField = exports.SocialAccountProvider = exports.SecurityVulnerabilityOrderField = exports.SecurityAdvisorySeverity = exports.SecurityAdvisoryOrderField = exports.SecurityAdvisoryIdentifierType = exports.SecurityAdvisoryEcosystem = exports.SecurityAdvisoryClassification = exports.SearchType = exports.SavedReplyOrderField = exports.SamlSignatureAlgorithm = exports.SamlDigestAlgorithm = exports.RoleInOrganization = exports.RequestableCheckStatusState = exports.RepositoryVulnerabilityAlertState = void 0;
+exports.IpAllowListEnabledSettingValue = exports.IdentityProviderConfigurationState = exports.GitSignatureState = exports.GistPrivacy = exports.GistOrderField = exports.FundingPlatform = exports.FileViewedState = exports.EnterpriseUserDeployment = exports.EnterpriseUserAccountMembershipRole = exports.EnterpriseServerUserAccountsUploadSyncState = exports.EnterpriseServerUserAccountsUploadOrderField = exports.EnterpriseServerUserAccountOrderField = exports.EnterpriseServerUserAccountEmailOrderField = exports.EnterpriseServerInstallationOrderField = exports.EnterpriseMembersCanMakePurchasesSettingValue = exports.EnterpriseMembersCanCreateRepositoriesSettingValue = exports.EnterpriseMemberOrderField = exports.EnterpriseEnabledSettingValue = exports.EnterpriseEnabledDisabledSettingValue = exports.EnterpriseDefaultRepositoryPermissionSettingValue = exports.EnterpriseAllowPrivateRepositoryForkingPolicyValue = exports.EnterpriseAdministratorRole = exports.EnterpriseAdministratorInvitationOrderField = exports.DismissReason = exports.DiscussionStateReason = exports.DiscussionState = exports.DiscussionPollOptionOrderField = exports.DiscussionOrderField = exports.DiscussionCloseReason = exports.DiffSide = exports.DeploymentStatusState = exports.DeploymentState = exports.DeploymentReviewState = exports.DeploymentProtectionRuleType = exports.DeploymentOrderField = exports.DependencyGraphEcosystem = exports.DefaultRepositoryPermissionField = exports.ContributionLevel = exports.ComparisonStatus = exports.CommitContributionOrderField = exports.CommentCannotUpdateReason = exports.CommentAuthorAssociation = exports.CollaboratorAffiliation = exports.CheckStatusState = exports.CheckRunType = exports.CheckRunState = exports.CheckConclusionState = exports.CheckAnnotationLevel = exports.AuditLogOrderField = exports.ActorType = void 0;
+exports.PinnableItemType = exports.PatchStatus = exports.PackageVersionOrderField = exports.PackageType = exports.PackageOrderField = exports.PackageFileOrderField = exports.OrganizationOrderField = exports.OrganizationMigrationState = exports.OrganizationMembersCanCreateRepositoriesSettingValue = exports.OrganizationMemberRole = exports.OrganizationInvitationType = exports.OrganizationInvitationSource = exports.OrganizationInvitationRole = exports.OrgUpdateMemberRepositoryCreationPermissionAuditEntryVisibility = exports.OrgUpdateMemberAuditEntryPermission = exports.OrgUpdateDefaultRepositoryPermissionAuditEntryPermission = exports.OrgRemoveOutsideCollaboratorAuditEntryReason = exports.OrgRemoveOutsideCollaboratorAuditEntryMembershipType = exports.OrgRemoveMemberAuditEntryReason = exports.OrgRemoveMemberAuditEntryMembershipType = exports.OrgRemoveBillingManagerAuditEntryReason = exports.OrgEnterpriseOwnerOrderField = exports.OrgCreateAuditEntryBillingPlan = exports.OrgAddMemberAuditEntryPermission = exports.OrderDirection = exports.OperationType = exports.OauthApplicationCreateAuditEntryState = exports.OidcProviderType = exports.NotificationRestrictionSettingValue = exports.MilestoneState = exports.MilestoneOrderField = exports.MigrationState = exports.MigrationSourceType = exports.MergeableState = exports.MergeQueueMergingStrategy = exports.MergeQueueEntryState = exports.MergeCommitTitle = exports.MergeCommitMessage = exports.MannequinOrderField = exports.LockReason = exports.LanguageOrderField = exports.LabelOrderField = exports.IssueTimelineItemsItemType = exports.IssueStateReason = exports.IssueState = exports.IssueOrderField = exports.IssueCommentOrderField = exports.IssueClosedStateReason = exports.IpAllowListForInstalledAppsEnabledSettingValue = exports.IpAllowListEntryOrderField = void 0;
+exports.RepositoryMigrationOrderDirection = exports.RepositoryLockReason = exports.RepositoryInvitationOrderField = exports.RepositoryInteractionLimitOrigin = exports.RepositoryInteractionLimitExpiry = exports.RepositoryInteractionLimit = exports.RepositoryContributionType = exports.RepositoryAffiliation = exports.ReportedContentClassifiers = exports.RepoRemoveMemberAuditEntryVisibility = exports.RepoDestroyAuditEntryVisibility = exports.RepoCreateAuditEntryVisibility = exports.RepoChangeMergeSettingAuditEntryMergeType = exports.RepoArchivedAuditEntryVisibility = exports.RepoAddMemberAuditEntryVisibility = exports.RepoAccessAuditEntryVisibility = exports.ReleaseOrderField = exports.RefOrderField = exports.ReactionOrderField = exports.ReactionContent = exports.PullRequestUpdateState = exports.PullRequestTimelineItemsItemType = exports.PullRequestState = exports.PullRequestReviewThreadSubjectType = exports.PullRequestReviewState = exports.PullRequestReviewEvent = exports.PullRequestReviewDecision = exports.PullRequestReviewCommentState = exports.PullRequestOrderField = exports.PullRequestMergeMethod = exports.ProjectV2WorkflowsOrderField = exports.ProjectV2ViewOrderField = exports.ProjectV2ViewLayout = exports.ProjectV2State = exports.ProjectV2SingleSelectFieldOptionColor = exports.ProjectV2OrderField = exports.ProjectV2ItemType = exports.ProjectV2ItemOrderField = exports.ProjectV2ItemFieldValueOrderField = exports.ProjectV2FieldType = exports.ProjectV2FieldOrderField = exports.ProjectV2CustomFieldType = exports.ProjectTemplate = exports.ProjectState = exports.ProjectOrderField = exports.ProjectColumnPurpose = exports.ProjectCardState = exports.ProjectCardArchivedState = exports.PinnedDiscussionPattern = exports.PinnedDiscussionGradient = void 0;
+exports.TeamRepositoryOrderField = exports.TeamPrivacy = exports.TeamOrderField = exports.TeamNotificationSetting = exports.TeamMembershipType = exports.TeamMemberRole = exports.TeamMemberOrderField = exports.TeamDiscussionOrderField = exports.TeamDiscussionCommentOrderField = exports.SubscriptionState = exports.StatusState = exports.StarOrderField = exports.SquashMergeCommitTitle = exports.SquashMergeCommitMessage = exports.SponsorshipPrivacy = exports.SponsorshipOrderField = exports.SponsorshipNewsletterOrderField = exports.SponsorsTierOrderField = exports.SponsorsListingFeaturedItemFeatureableType = exports.SponsorsGoalKind = exports.SponsorsCountryOrRegionCode = exports.SponsorsActivityPeriod = exports.SponsorsActivityOrderField = exports.SponsorsActivityAction = exports.SponsorableOrderField = exports.SponsorOrderField = exports.SocialAccountProvider = exports.SecurityVulnerabilityOrderField = exports.SecurityAdvisorySeverity = exports.SecurityAdvisoryOrderField = exports.SecurityAdvisoryIdentifierType = exports.SecurityAdvisoryEcosystem = exports.SecurityAdvisoryClassification = exports.SearchType = exports.SavedReplyOrderField = exports.SamlSignatureAlgorithm = exports.SamlDigestAlgorithm = exports.RuleEnforcement = exports.RuleBypassMode = exports.RoleInOrganization = exports.RequestableCheckStatusState = exports.RepositoryVulnerabilityAlertState = exports.RepositoryVulnerabilityAlertDependencyScope = exports.RepositoryVisibility = exports.RepositoryRulesetTarget = exports.RepositoryRuleType = exports.RepositoryPrivacy = exports.RepositoryPermission = exports.RepositoryOrderField = exports.RepositoryMigrationOrderField = void 0;
+exports.PullRequestsWithLabels = exports.WorkflowState = exports.WorkflowRunOrderField = exports.VerifiableDomainOrderField = exports.UserStatusOrderField = exports.UserBlockDuration = exports.TrackedIssueStates = exports.TopicSuggestionDeclineReason = exports.TeamRole = void 0;
 const graphql_tag_1 = __importDefault(__nccwpck_require__(8435));
 /** The actor's type. */
 var ActorType;
@@ -278,6 +279,8 @@ var DeploymentState;
     DeploymentState["Pending"] = "PENDING";
     /** The deployment has queued */
     DeploymentState["Queued"] = "QUEUED";
+    /** The deployment was successful. */
+    DeploymentState["Success"] = "SUCCESS";
     /** The deployment is waiting. */
     DeploymentState["Waiting"] = "WAITING";
 })(DeploymentState = exports.DeploymentState || (exports.DeploymentState = {}));
@@ -309,6 +312,16 @@ var DiffSide;
     /** The right side of the diff. */
     DiffSide["Right"] = "RIGHT";
 })(DiffSide = exports.DiffSide || (exports.DiffSide = {}));
+/** The possible reasons for closing a discussion. */
+var DiscussionCloseReason;
+(function (DiscussionCloseReason) {
+    /** The discussion is a duplicate of another */
+    DiscussionCloseReason["Duplicate"] = "DUPLICATE";
+    /** The discussion is no longer relevant */
+    DiscussionCloseReason["Outdated"] = "OUTDATED";
+    /** The discussion has been resolved */
+    DiscussionCloseReason["Resolved"] = "RESOLVED";
+})(DiscussionCloseReason = exports.DiscussionCloseReason || (exports.DiscussionCloseReason = {}));
 /** Properties by which discussion connections can be ordered. */
 var DiscussionOrderField;
 (function (DiscussionOrderField) {
@@ -325,6 +338,26 @@ var DiscussionPollOptionOrderField;
     /** Order poll options by the number of votes it has. */
     DiscussionPollOptionOrderField["VoteCount"] = "VOTE_COUNT";
 })(DiscussionPollOptionOrderField = exports.DiscussionPollOptionOrderField || (exports.DiscussionPollOptionOrderField = {}));
+/** The possible states of a discussion. */
+var DiscussionState;
+(function (DiscussionState) {
+    /** A discussion that has been closed */
+    DiscussionState["Closed"] = "CLOSED";
+    /** A discussion that is open */
+    DiscussionState["Open"] = "OPEN";
+})(DiscussionState = exports.DiscussionState || (exports.DiscussionState = {}));
+/** The possible state reasons of a discussion. */
+var DiscussionStateReason;
+(function (DiscussionStateReason) {
+    /** The discussion is a duplicate of another */
+    DiscussionStateReason["Duplicate"] = "DUPLICATE";
+    /** The discussion is no longer relevant */
+    DiscussionStateReason["Outdated"] = "OUTDATED";
+    /** The discussion was reopened */
+    DiscussionStateReason["Reopened"] = "REOPENED";
+    /** The discussion has been resolved */
+    DiscussionStateReason["Resolved"] = "RESOLVED";
+})(DiscussionStateReason = exports.DiscussionStateReason || (exports.DiscussionStateReason = {}));
 /** The possible reasons that a Dependabot alert was dismissed. */
 var DismissReason;
 (function (DismissReason) {
@@ -777,6 +810,28 @@ var MergeCommitTitle;
     /** Default to the pull request's title. */
     MergeCommitTitle["PrTitle"] = "PR_TITLE";
 })(MergeCommitTitle = exports.MergeCommitTitle || (exports.MergeCommitTitle = {}));
+/** The possible states for a merge queue entry. */
+var MergeQueueEntryState;
+(function (MergeQueueEntryState) {
+    /** The entry is currently waiting for checks to pass. */
+    MergeQueueEntryState["AwaitingChecks"] = "AWAITING_CHECKS";
+    /** The entry is currently locked. */
+    MergeQueueEntryState["Locked"] = "LOCKED";
+    /** The entry is currently mergeable. */
+    MergeQueueEntryState["Mergeable"] = "MERGEABLE";
+    /** The entry is currently queued. */
+    MergeQueueEntryState["Queued"] = "QUEUED";
+    /** The entry is currently unmergeable. */
+    MergeQueueEntryState["Unmergeable"] = "UNMERGEABLE";
+})(MergeQueueEntryState = exports.MergeQueueEntryState || (exports.MergeQueueEntryState = {}));
+/** The possible merging strategies for a merge queue. */
+var MergeQueueMergingStrategy;
+(function (MergeQueueMergingStrategy) {
+    /** Entries only allowed to merge if they are passing. */
+    MergeQueueMergingStrategy["Allgreen"] = "ALLGREEN";
+    /** Failing Entires are allowed to merge if they are with a passing entry. */
+    MergeQueueMergingStrategy["Headgreen"] = "HEADGREEN";
+})(MergeQueueMergingStrategy = exports.MergeQueueMergingStrategy || (exports.MergeQueueMergingStrategy = {}));
 /** Whether or not a PullRequest can be merged. */
 var MergeableState;
 (function (MergeableState) {
@@ -1476,6 +1531,14 @@ var PullRequestReviewState;
     /** A review that has not yet been submitted. */
     PullRequestReviewState["Pending"] = "PENDING";
 })(PullRequestReviewState = exports.PullRequestReviewState || (exports.PullRequestReviewState = {}));
+/** The possible subject types of a pull request review comment. */
+var PullRequestReviewThreadSubjectType;
+(function (PullRequestReviewThreadSubjectType) {
+    /** A comment that has been made against the file of a pull request */
+    PullRequestReviewThreadSubjectType["File"] = "FILE";
+    /** A comment that has been made against the line of a pull request */
+    PullRequestReviewThreadSubjectType["Line"] = "LINE";
+})(PullRequestReviewThreadSubjectType = exports.PullRequestReviewThreadSubjectType || (exports.PullRequestReviewThreadSubjectType = {}));
 /** The possible states of a pull request. */
 var PullRequestState;
 (function (PullRequestState) {
@@ -1872,6 +1935,46 @@ var RepositoryPrivacy;
     /** Public */
     RepositoryPrivacy["Public"] = "PUBLIC";
 })(RepositoryPrivacy = exports.RepositoryPrivacy || (exports.RepositoryPrivacy = {}));
+/** The rule types supported in rulesets */
+var RepositoryRuleType;
+(function (RepositoryRuleType) {
+    /** Branch name pattern */
+    RepositoryRuleType["BranchNamePattern"] = "BRANCH_NAME_PATTERN";
+    /** Committer email pattern */
+    RepositoryRuleType["CommitterEmailPattern"] = "COMMITTER_EMAIL_PATTERN";
+    /** Commit author email pattern */
+    RepositoryRuleType["CommitAuthorEmailPattern"] = "COMMIT_AUTHOR_EMAIL_PATTERN";
+    /** Commit message pattern */
+    RepositoryRuleType["CommitMessagePattern"] = "COMMIT_MESSAGE_PATTERN";
+    /** Creation */
+    RepositoryRuleType["Creation"] = "CREATION";
+    /** Deletion */
+    RepositoryRuleType["Deletion"] = "DELETION";
+    /** Non fast forward */
+    RepositoryRuleType["NonFastForward"] = "NON_FAST_FORWARD";
+    /** Pull request */
+    RepositoryRuleType["PullRequest"] = "PULL_REQUEST";
+    /** Required deployments */
+    RepositoryRuleType["RequiredDeployments"] = "REQUIRED_DEPLOYMENTS";
+    /** Required linear history */
+    RepositoryRuleType["RequiredLinearHistory"] = "REQUIRED_LINEAR_HISTORY";
+    /** Required signatures */
+    RepositoryRuleType["RequiredSignatures"] = "REQUIRED_SIGNATURES";
+    /** Required status checks */
+    RepositoryRuleType["RequiredStatusChecks"] = "REQUIRED_STATUS_CHECKS";
+    /** Tag name pattern */
+    RepositoryRuleType["TagNamePattern"] = "TAG_NAME_PATTERN";
+    /** Update */
+    RepositoryRuleType["Update"] = "UPDATE";
+})(RepositoryRuleType = exports.RepositoryRuleType || (exports.RepositoryRuleType = {}));
+/** The targets supported for rulesets */
+var RepositoryRulesetTarget;
+(function (RepositoryRulesetTarget) {
+    /** Branch */
+    RepositoryRulesetTarget["Branch"] = "BRANCH";
+    /** Tag */
+    RepositoryRulesetTarget["Tag"] = "TAG";
+})(RepositoryRulesetTarget = exports.RepositoryRulesetTarget || (exports.RepositoryRulesetTarget = {}));
 /** The repository's visibility level. */
 var RepositoryVisibility;
 (function (RepositoryVisibility) {
@@ -1893,6 +1996,8 @@ var RepositoryVulnerabilityAlertDependencyScope;
 /** The possible states of an alert */
 var RepositoryVulnerabilityAlertState;
 (function (RepositoryVulnerabilityAlertState) {
+    /** An alert that has been automatically closed by Dependabot. */
+    RepositoryVulnerabilityAlertState["AutoDismissed"] = "AUTO_DISMISSED";
     /** An alert that has been manually closed by a user. */
     RepositoryVulnerabilityAlertState["Dismissed"] = "DISMISSED";
     /** An alert that has been resolved by a code change. */
@@ -1924,6 +2029,26 @@ var RoleInOrganization;
     /** A user who is unaffiliated with the organization. */
     RoleInOrganization["Unaffiliated"] = "UNAFFILIATED";
 })(RoleInOrganization = exports.RoleInOrganization || (exports.RoleInOrganization = {}));
+/** The bypass mode for a rule or ruleset. */
+var RuleBypassMode;
+(function (RuleBypassMode) {
+    /** Bypassing is disabled */
+    RuleBypassMode["None"] = "NONE";
+    /** Those with bypass permission at the organization level can bypass */
+    RuleBypassMode["Organization"] = "ORGANIZATION";
+    /** Those with bypass permission at the repository level can bypass */
+    RuleBypassMode["Repository"] = "REPOSITORY";
+})(RuleBypassMode = exports.RuleBypassMode || (exports.RuleBypassMode = {}));
+/** The level of enforcement for a rule or ruleset. */
+var RuleEnforcement;
+(function (RuleEnforcement) {
+    /** Rules will be enforced */
+    RuleEnforcement["Active"] = "ACTIVE";
+    /** Do not evaluate or enforce rules */
+    RuleEnforcement["Disabled"] = "DISABLED";
+    /** Allow admins to test rules before enforcing them. Admins can view insights on the Rule Insights page (`evaluate` is only available with GitHub Enterprise). */
+    RuleEnforcement["Evaluate"] = "EVALUATE";
+})(RuleEnforcement = exports.RuleEnforcement || (exports.RuleEnforcement = {}));
 /** The possible digest algorithms used to sign SAML requests for an identity provider. */
 var SamlDigestAlgorithm;
 (function (SamlDigestAlgorithm) {
@@ -2732,6 +2857,14 @@ var TeamMembershipType;
     /** Includes only immediate members of the team. */
     TeamMembershipType["Immediate"] = "IMMEDIATE";
 })(TeamMembershipType = exports.TeamMembershipType || (exports.TeamMembershipType = {}));
+/** The possible team notification values. */
+var TeamNotificationSetting;
+(function (TeamNotificationSetting) {
+    /** No one will receive notifications. */
+    TeamNotificationSetting["NotificationsDisabled"] = "NOTIFICATIONS_DISABLED";
+    /** Everyone will receive notifications when the team is @mentioned. */
+    TeamNotificationSetting["NotificationsEnabled"] = "NOTIFICATIONS_ENABLED";
+})(TeamNotificationSetting = exports.TeamNotificationSetting || (exports.TeamNotificationSetting = {}));
 /** Properties by which team connections can be ordered. */
 var TeamOrderField;
 (function (TeamOrderField) {
@@ -2824,6 +2957,20 @@ var WorkflowRunOrderField;
     /** Order workflow runs by most recently created */
     WorkflowRunOrderField["CreatedAt"] = "CREATED_AT";
 })(WorkflowRunOrderField = exports.WorkflowRunOrderField || (exports.WorkflowRunOrderField = {}));
+/** The possible states for a workflow. */
+var WorkflowState;
+(function (WorkflowState) {
+    /** The workflow is active. */
+    WorkflowState["Active"] = "ACTIVE";
+    /** The workflow was deleted from the git repository. */
+    WorkflowState["Deleted"] = "DELETED";
+    /** The workflow was disabled by default on a fork. */
+    WorkflowState["DisabledFork"] = "DISABLED_FORK";
+    /** The workflow was disabled for inactivity in the repository. */
+    WorkflowState["DisabledInactivity"] = "DISABLED_INACTIVITY";
+    /** The workflow was disabled manually. */
+    WorkflowState["DisabledManually"] = "DISABLED_MANUALLY";
+})(WorkflowState = exports.WorkflowState || (exports.WorkflowState = {}));
 exports.PullRequestsWithLabels = (0, graphql_tag_1.default) `
     query PullRequestsWithLabels($owner: String!, $repo: String!, $labels: [String!]) {
   repository(owner: $owner, name: $repo) {
