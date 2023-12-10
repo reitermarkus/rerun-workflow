@@ -7,7 +7,7 @@ export type WorkflowRun = Awaited<
   ReturnType<Octokit['rest']['actions']['listWorkflowRuns']>
 >['data']['workflow_runs'][0]
 
-export enum RerunCondition {
+export const enum RerunCondition {
   // Always re-run unless already queued or in progress.
   Always,
   // Re-run only when completed and failed.

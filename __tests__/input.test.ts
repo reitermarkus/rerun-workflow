@@ -1,6 +1,6 @@
 import * as input from '../src/input'
 
-const testEnvVars = {
+const testEnvVars: { [id: string]: string } = {
   INPUT_TOKEN: 'deadbeefcafebabedeadbeefcafebabedeadbeef',
   'INPUT_ONCE-LABEL': 'ci-requeue',
   'INPUT_CONTINUOUS-LABEL': 'ci-retry',
@@ -11,7 +11,7 @@ const testEnvVars = {
 describe('input', () => {
   beforeEach(() => {
     for (const key in testEnvVars) {
-      process.env[key] = testEnvVars[key as keyof typeof testEnvVars]
+      process.env[key] = testEnvVars[key]
     }
   })
 
