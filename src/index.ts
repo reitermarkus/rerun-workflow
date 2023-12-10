@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { isPresent } from 'ts-is-present'
 
-import { PullRequestsWithLabelsQuery, PullRequestsWithLabels } from './generated/graphql'
+import { PullRequestsWithLabelsQuery, PullRequestsWithLabels } from './codegen/github-graphql-schema'
 
 import { Octokit, PullRequest, RerunCondition, WorkflowRun } from './types'
 import {
@@ -148,24 +148,40 @@ class RerunWorkflowAction {
   }
 
   async handleRepoEvent(octokit: Octokit): Promise<void> {
-    const labels: string[] = [this.input.onceLabel, this.input.continuousLabel].filter(isPresent)
+    const searchedLabels: string[] = [this.input.onceLabel, this.input.continuousLabel].filter(isPresent)
 
-    core.info(`Searching for pull requests with ${labels.map(l => `'${l}'`).join(' or ')} labels.`)
+    core.info(`Searching for pull requests with ${searchedLabels.map(l => `'${l}'`).join(' or ')} labels.`)
 
     // We need to get the source code of the query since the `@octokit/graphql`
     // API doesn't (yet) support passing a `DocumentNode` object.
-    const query = PullRequestsWithLabels.loc!.source!.body
+    const query = PullRequestsWithLabels.loc?.source?.body
+
+    if (!query) {
+      core.setFailed('GraphQL search query is undefined.')
+      return
+    }
 
     const result: PullRequestsWithLabelsQuery = await octokit.graphql({
       query,
       ...github.context.repo,
-      labels,
+      labels: searchedLabels,
     })
 
-    const pullRequests = result.repository!.pullRequests!.edges!.map(pr => ({
-      number: pr!.node!.number,
-      labels: pr!.node!.labels!.edges!.map(l => l!.node!.name),
-    }))
+    const pullRequests = (result.repository?.pullRequests?.edges || [])
+      .map(pr => {
+        const number = pr?.node?.number
+        const labels = pr?.node?.labels?.edges?.map(l => l?.node?.name).filter(isPresent)
+
+        if (!isPresent(number) || !isPresent(labels)) {
+          return
+        }
+
+        return {
+          number,
+          labels,
+        }
+      })
+      .filter(isPresent)
 
     if (pullRequests.length) {
       core.info(`Found ${pullRequests.length} pull requests with matching labels.`)
@@ -175,16 +191,13 @@ class RerunWorkflowAction {
     }
 
     await Promise.all(
-      pullRequests.map(
-        ({ number, labels }) =>
-          new Promise(async () => {
-            if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {
-              await this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.Always)
-            } else if (this.input.continuousLabel && labels.includes(this.input.continuousLabel)) {
-              await this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.OnFailure)
-            }
-          })
-      )
+      pullRequests.map(async ({ number, labels }) => {
+        if (this.input.onceLabel && labels.includes(this.input.onceLabel)) {
+          await this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.Always)
+        } else if (this.input.continuousLabel && labels.includes(this.input.continuousLabel)) {
+          await this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.OnFailure)
+        }
+      })
     )
   }
 
@@ -214,7 +227,9 @@ class RerunWorkflowAction {
       }
 
       await Promise.all(
-        pullRequests.map(number => this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.Never))
+        pullRequests.map(async number =>
+          this.rerunWorkflowsForPullRequest(octokit, number, RerunCondition.Never)
+        )
       )
     }
   }

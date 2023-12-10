@@ -19,7 +19,7 @@ export function get(): Input {
     throw new Error('One of `once-label`, `continous-label` or `trigger-labels` must be specified.')
   }
 
-  if (onceLabel && continuousLabel && onceLabel == continuousLabel) {
+  if (onceLabel && continuousLabel && onceLabel === continuousLabel) {
     throw new Error('`once-label` and `continous-label` cannot have the same value.')
   }
 

@@ -1,4 +1,4 @@
 dist/
-lib/
-src/generated/graphql.ts
 node_modules/
+coverage/
+src/generated/graphql.ts

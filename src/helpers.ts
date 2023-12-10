@@ -102,9 +102,15 @@ export async function pullRequestsForWorkflowRun(
 export async function rerunWorkflow(octokit: Octokit, workflowRun: WorkflowRun): Promise<void> {
   try {
     core.info(`Triggering re-run for workflow run ${workflowRun.id}…`)
+
+    if (!isPresent(workflowRun.check_suite_id)) {
+      core.setFailed(`No check suite ID defined for workflow run ${workflowRun.id}.`)
+      return
+    }
+
     await octokit.rest.checks.rerequestSuite({
       ...github.context.repo,
-      check_suite_id: workflowRun.check_suite_id!,
+      check_suite_id: workflowRun.check_suite_id,
     })
     core.info(`Re-run of workflow run ${workflowRun.id} successfully started.`)
   } catch (err) {
@@ -112,7 +118,11 @@ export async function rerunWorkflow(octokit: Octokit, workflowRun: WorkflowRun):
   }
 }
 
-export async function removeLabelFromPullRequest(octokit: Octokit, pullRequest: PullRequest, label: string) {
+export async function removeLabelFromPullRequest(
+  octokit: Octokit,
+  pullRequest: PullRequest,
+  label: string
+): Promise<void> {
   const { number, labels } = pullRequest
 
   const currentLabels = labels.map(l => l.name)
