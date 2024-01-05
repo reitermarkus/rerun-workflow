@@ -55986,13 +55986,25 @@ var ThreadSubscriptionState;
 /** Reason that the suggested topic is declined. */
 var TopicSuggestionDeclineReason;
 (function (TopicSuggestionDeclineReason) {
-    /** The suggested topic is not relevant to the repository. */
+    /**
+     * The suggested topic is not relevant to the repository.
+     * @deprecated Suggested topics are no longer supported Removal on 2024-04-01 UTC.
+     */
     TopicSuggestionDeclineReason["NotRelevant"] = "NOT_RELEVANT";
-    /** The viewer does not like the suggested topic. */
+    /**
+     * The viewer does not like the suggested topic.
+     * @deprecated Suggested topics are no longer supported Removal on 2024-04-01 UTC.
+     */
     TopicSuggestionDeclineReason["PersonalPreference"] = "PERSONAL_PREFERENCE";
-    /** The suggested topic is too general for the repository. */
+    /**
+     * The suggested topic is too general for the repository.
+     * @deprecated Suggested topics are no longer supported Removal on 2024-04-01 UTC.
+     */
     TopicSuggestionDeclineReason["TooGeneral"] = "TOO_GENERAL";
-    /** The suggested topic is too specific for the repository (e.g. #ruby-on-rails-version-4-2-1). */
+    /**
+     * The suggested topic is too specific for the repository (e.g. #ruby-on-rails-version-4-2-1).
+     * @deprecated Suggested topics are no longer supported Removal on 2024-04-01 UTC.
+     */
     TopicSuggestionDeclineReason["TooSpecific"] = "TOO_SPECIFIC";
 })(TopicSuggestionDeclineReason || (exports.TopicSuggestionDeclineReason = TopicSuggestionDeclineReason = {}));
 /** The possible states of a tracked issue. */

@@ -103,4 +103,4 @@ __tests__/runner/*
 *.code-workspace
 
 # Generated code
-src/codegen/github-graphql-schema.ts
+src/codegen/**

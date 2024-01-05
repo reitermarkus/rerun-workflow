@@ -157,8 +157,7 @@ class RerunWorkflowAction {
     const query = PullRequestsWithLabels.loc?.source?.body
 
     if (!query) {
-      core.setFailed('GraphQL search query is undefined.')
-      return
+      throw new Error('GraphQL query is undefined.')
     }
 
     const result: PullRequestsWithLabelsQuery = await octokit.graphql({
