@@ -24,7 +24,6 @@ parserOptions:
     - './.github/linters/tsconfig.json'
     - "./tsconfig.json"
 
-
 plugins:
 - jest
 - "@typescript-eslint"

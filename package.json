@@ -25,7 +25,7 @@
   },
   "scripts": {
     "bundle": "npm run format:write && npm run package",
-    "codegen": "graphql-codegen --config src/codegen.ts",
+    "codegen": "npx graphql-codegen --config src/codegen.ts",
     "format:write": "prettier --write **/*.ts",
     "format:check": "prettier --check **/*.ts",
     "lint": "npm run codegen && npx eslint . -c .github/linters/.eslintrc.yml",
