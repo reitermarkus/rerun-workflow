@@ -56376,8 +56376,7 @@ class RerunWorkflowAction {
         // API doesn't (yet) support passing a `DocumentNode` object.
         const query = github_graphql_schema_1.PullRequestsWithLabels.loc?.source?.body;
         if (!query) {
-            core.setFailed('GraphQL search query is undefined.');
-            return;
+            throw new Error('GraphQL query is undefined.');
         }
         const result = await octokit.graphql({
             query,
