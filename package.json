@@ -74,10 +74,10 @@
   },
   "devDependencies": {
     "@graphql-codegen/cli": "5.0.2",
-    "@graphql-codegen/typescript": "4.0.4",
-    "@graphql-codegen/typescript-document-nodes": "4.0.4",
+    "@graphql-codegen/typescript": "4.0.5",
+    "@graphql-codegen/typescript-document-nodes": "4.0.5",
     "@graphql-codegen/typescript-operations": "^4.0.1",
-    "@graphql-codegen/typescript-resolvers": "4.0.4",
+    "@graphql-codegen/typescript-resolvers": "4.0.5",
     "@octokit/graphql-schema": "^14.56.0",
     "@octokit/types": "^12.5.0",
     "@types/jest": "^29.5.12",
