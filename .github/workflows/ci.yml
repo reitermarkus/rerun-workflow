@@ -53,7 +53,7 @@ jobs:
         with:
           name: dist
           path: dist
-      - uses: peter-evans/create-pull-request@e0743ed96cb63913cf4be3cd1f5492df2ae1c6a4
+      - uses: peter-evans/create-pull-request@bac6da8071ada152cce76cfbd24b54b7190ad799
         with:
           commit-message: Update distribution.
           title: Update distribution.
