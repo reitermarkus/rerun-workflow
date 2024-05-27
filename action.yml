@@ -33,6 +33,7 @@ inputs:
     description: >
       When re-running the workflow, only re-run jobs which have failed.
     required: false
+    default: false
   workflow:
     description: File name or ID of the workflow which should be re-run.
     required: true

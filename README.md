@@ -13,13 +13,13 @@ This action allows re-running a workflow when labels are added to (or removed fr
 | Name | Required  | Description |
 |------|-----------|-------------|
 | `token` | yes | A GitHub Token other than the default `GITHUB_TOKEN` needs to be specified in order to be able to re-run workflows. |
-| `once-label` | no\* | When this label is added to a pull request, re-run the `workflow` once and remove the label again. |
-| `continuous-label` | no\* | When this label is added to a pull request, continuously re-run the `workflow` until it succeeds or is cancelled. The action needs to be run on `workflow_run`, `push` or `schedule` events for this to work. |
-| `trigger-labels` | no\* | When any of the labels in this comma-separated list is added to or removed from a pull request, re-run the `workflow` once. |
-| `failed-jobs-only`| no | Specify whether only failed jobs should be re-run |
+| `once-label` | no<sup>1</sup> | When this label is added to a pull request, re-run the `workflow` once and remove the label again. |
+| `continuous-label` | no<sup>1</sup> | When this label is added to a pull request, continuously re-run the `workflow` until it succeeds or is cancelled. The action needs to be run on `workflow_run`, `push` or `schedule` events for this to work. |
+| `trigger-labels` | no<sup>1</sup> | When any of the labels in this comma-separated list is added to or removed from a pull request, re-run the `workflow` once. |
+| `failed-jobs-only`| no | Specify whether only failed jobs should be re-run. |
 | `workflow` | yes | File name or ID of the workflow which should be re-run. |
 
-\* At least one of `once-label`, `continuous-label` or `trigger-labels` is required.
+<sup>1</sup> At least one of `once-label`, `continuous-label` or `trigger-labels` is required.
 
 
 ## Example Workflow
@@ -68,5 +68,6 @@ jobs:
           once-label: ci-requeue
           continuous-label: ci-retry
           trigger-labels: ci-trigger-1,ci-trigger-2
+          failed-jobs-only: false
           workflow: ci.yml
 ```
