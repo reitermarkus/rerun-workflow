@@ -54,7 +54,7 @@ class RerunWorkflowAction {
   async rerunWorkflowsForPullRequest(
     octokit: Octokit,
     number: number,
-    rerunCondition: RerunCondition,
+    rerunCondition: RerunCondition
   ): Promise<void> {
     const pullRequest = await getPullRequest(octokit, number)
 
