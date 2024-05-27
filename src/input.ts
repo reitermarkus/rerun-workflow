@@ -35,5 +35,5 @@ export function get(): Input {
     triggerLabels = triggerLabels.filter(l => l !== continuousLabel)
   }
 
-  return { token, onceLabel, continuousLabel, triggerLabels,  failedJobsOnly, workflow }
+  return { token, onceLabel, continuousLabel, triggerLabels, failedJobsOnly, workflow }
 }
