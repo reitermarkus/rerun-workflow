@@ -14,7 +14,7 @@ export function get(): Input {
   const onceLabel = core.getInput('once-label') || null
   const continuousLabel = core.getInput('continuous-label') || null
   let triggerLabels = core.getInput('trigger-labels').split(',')
-  const failedJobsOnly = core.getInput('failed-jobs-only') === 'true' || false
+  const failedJobsOnly = core.getInput('failed-jobs-only') === 'true'
   const workflow = core.getInput('workflow', { required: true })
 
   if (!onceLabel && !continuousLabel && !triggerLabels) {
