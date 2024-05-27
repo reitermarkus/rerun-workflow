@@ -118,6 +118,25 @@ export async function rerunWorkflow(octokit: Octokit, workflowRun: WorkflowRun):
   }
 }
 
+export async function rerunFailedJobs(octokit: Octokit, workflowRun: WorkflowRun): Promise<void> {
+  try {
+    core.info(`Triggering re-run of failed jobs for workflow run ${workflowRun.id}…`)
+
+    if (!isPresent(workflowRun.check_suite_id)) {
+      core.setFailed(`No check suite ID defined for workflow run ${workflowRun.id}.`)
+      return
+    }
+
+    await octokit.rest.actions.reRunWorkflowFailedJobs({
+      ...github.context.repo,
+      run_id: workflowRun.id,
+    })
+    core.info(`Re-run of failed jobs in workflow run ${workflowRun.id} successfully started.`)
+  } catch (err) {
+    core.setFailed(`Re-running failed jobs in workflow run ${workflowRun.id} failed: ${err}`)
+  }
+}
+
 export async function removeLabelFromPullRequest(
   octokit: Octokit,
   pullRequest: PullRequest,

@@ -13,6 +13,7 @@ import {
   pullRequestsForWorkflowRun,
   removeLabelFromPullRequest,
   rerunWorkflow,
+  rerunFailedJobs,
 } from './helpers'
 import { Input, get as getInput } from './input'
 
@@ -53,11 +54,13 @@ class RerunWorkflowAction {
   async rerunWorkflowsForPullRequest(
     octokit: Octokit,
     number: number,
-    rerunCondition: RerunCondition
+    rerunCondition: RerunCondition,
   ): Promise<void> {
     const pullRequest = await getPullRequest(octokit, number)
 
     const workflowRuns = await latestWorkflowRunsForPullRequest(octokit, this.input.workflow, pullRequest)
+
+    const failedJobsOnly = this.input.failedJobsOnly
 
     let reruns = 0
 
@@ -81,14 +84,22 @@ class RerunWorkflowAction {
               break
             }
             case RerunCondition.Always: {
-              await rerunWorkflow(octokit, workflowRun)
+              if (failedJobsOnly) {
+                await rerunFailedJobs(octokit, workflowRun)
+              } else {
+                await rerunWorkflow(octokit, workflowRun)
+              }
               reruns += 1
               break
             }
             case RerunCondition.OnFailure: {
               switch (workflowRun.conclusion) {
                 case 'failure': {
-                  await rerunWorkflow(octokit, workflowRun)
+                  if (failedJobsOnly) {
+                    await rerunFailedJobs(octokit, workflowRun)
+                  } else {
+                    await rerunWorkflow(octokit, workflowRun)
+                  }
                   reruns += 1
                   break
                 }

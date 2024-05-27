@@ -6,6 +6,7 @@ export interface Input {
   continuousLabel: string | null
   triggerLabels: string[]
   workflow: string
+  failedJobsOnly: boolean
 }
 
 export function get(): Input {
@@ -13,6 +14,7 @@ export function get(): Input {
   const onceLabel = core.getInput('once-label') || null
   const continuousLabel = core.getInput('continuous-label') || null
   let triggerLabels = core.getInput('trigger-labels').split(',')
+  const failedJobsOnly = core.getInput('failed-jobs-only') === 'true'
   const workflow = core.getInput('workflow', { required: true })
 
   if (!onceLabel && !continuousLabel && !triggerLabels) {
@@ -33,5 +35,5 @@ export function get(): Input {
     triggerLabels = triggerLabels.filter(l => l !== continuousLabel)
   }
 
-  return { token, onceLabel, continuousLabel, triggerLabels, workflow }
+  return { token, onceLabel, continuousLabel, triggerLabels,  failedJobsOnly, workflow }
 }
