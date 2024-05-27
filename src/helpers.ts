@@ -130,7 +130,7 @@ export async function rerunFailedJobs(octokit: Octokit, workflowRun: WorkflowRun
     await octokit.rest.actions.reRunWorkflowFailedJobs({
       ...github.context.repo,
       run_id: workflowRun.id,
-    })s
+    })
     core.info(`Re-run of failed jobs in workflow run ${workflowRun.id} successfully started.`)
   } catch (err) {
     core.setFailed(`Re-running failed jobs in workflow run ${workflowRun.id} failed: ${err}`)
