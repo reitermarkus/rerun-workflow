@@ -81,7 +81,7 @@
     "@octokit/graphql-schema": "^15.22.0",
     "@octokit/types": "^13.5.0",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.3",
+    "@types/node": "^20.14.8",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@vercel/ncc": "^0.38.1",
     "eslint": "^8.57.0",
