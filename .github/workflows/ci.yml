@@ -61,7 +61,7 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_KEY }}
 
-      - uses: peter-evans/create-pull-request@98106d3f2b65918a6591f9e155117b7219ff7e51
+      - uses: peter-evans/create-pull-request@14576695c2f87fd4b34c70c3281d86036064ddda
         with:
           token: ${{ steps.generate-token.outputs.token }}
           commit-message: Update distribution.
