@@ -1882,6 +1882,7 @@ class Context {
         this.action = process.env.GITHUB_ACTION;
         this.actor = process.env.GITHUB_ACTOR;
         this.job = process.env.GITHUB_JOB;
+        this.runAttempt = parseInt(process.env.GITHUB_RUN_ATTEMPT, 10);
         this.runNumber = parseInt(process.env.GITHUB_RUN_NUMBER, 10);
         this.runId = parseInt(process.env.GITHUB_RUN_ID, 10);
         this.apiUrl = (_a = process.env.GITHUB_API_URL) !== null && _a !== void 0 ? _a : `https://api.github.com`;
@@ -8355,7 +8356,7 @@ function assertValidExecutionArguments(schema, document, rawVariableValues) {
  */
 
 function buildExecutionContext(args) {
-  var _definition$name, _operation$variableDe;
+  var _definition$name, _operation$variableDe, _options$maxCoercionE;
 
   const {
     schema,
@@ -8367,6 +8368,7 @@ function buildExecutionContext(args) {
     fieldResolver,
     typeResolver,
     subscribeFieldResolver,
+    options,
   } = args;
   let operation;
   const fragments = Object.create(null);
@@ -8429,7 +8431,14 @@ function buildExecutionContext(args) {
       ? rawVariableValues
       : {},
     {
-      maxErrors: 50,
+      maxErrors:
+        (_options$maxCoercionE =
+          options === null || options === void 0
+            ? void 0
+            : options.maxCoercionErrors) !== null &&
+        _options$maxCoercionE !== void 0
+          ? _options$maxCoercionE
+          : 50,
     },
   );
 
@@ -16881,10 +16890,7 @@ function visit(root, visitor, visitorKeys = _ast.QueryDocumentKeys) {
             }
           }
         } else {
-          node = Object.defineProperties(
-            {},
-            Object.getOwnPropertyDescriptors(node),
-          );
+          node = { ...node };
 
           for (const [editKey, editValue] of edits) {
             node[editKey] = editValue;
@@ -22780,7 +22786,10 @@ function coerceInputValueImpl(inputValue, type, onError, path) {
   }
 
   if ((0, _definition.isInputObjectType)(type)) {
-    if (!(0, _isObjectLike.isObjectLike)(inputValue)) {
+    if (
+      !(0, _isObjectLike.isObjectLike)(inputValue) ||
+      Array.isArray(inputValue)
+    ) {
       onError(
         (0, _Path.pathToArray)(path),
         inputValue,
@@ -26310,6 +26319,7 @@ class ValidationContext extends ASTValidationContext {
               node: variable,
               type: typeInfo.getInputType(),
               defaultValue: typeInfo.getDefaultValue(),
+              parentType: typeInfo.getParentInputType(),
             });
           },
         }),
@@ -30704,7 +30714,7 @@ function VariablesInAllowedPositionRule(context) {
       leave(operation) {
         const usages = context.getRecursiveVariableUsages(operation);
 
-        for (const { node, type, defaultValue } of usages) {
+        for (const { node, type, defaultValue, parentType } of usages) {
           const varName = node.name.value;
           const varDef = varDefMap[varName];
 
@@ -30732,6 +30742,21 @@ function VariablesInAllowedPositionRule(context) {
               context.reportError(
                 new _GraphQLError.GraphQLError(
                   `Variable "$${varName}" of type "${varTypeStr}" used in position expecting type "${typeStr}".`,
+                  {
+                    nodes: [varDef, node],
+                  },
+                ),
+              );
+            }
+
+            if (
+              (0, _definition.isInputObjectType)(parentType) &&
+              parentType.isOneOf &&
+              (0, _definition.isNullableType)(varType)
+            ) {
+              context.reportError(
+                new _GraphQLError.GraphQLError(
+                  `Variable "$${varName}" is of type "${varType}" but must be non-nullable to be used for OneOf Input Object "${parentType}".`,
                   {
                     nodes: [varDef, node],
                   },
@@ -31334,7 +31359,7 @@ exports.versionInfo = exports.version = void 0;
 /**
  * A string containing the version of the GraphQL.js library
  */
-const version = '16.10.0';
+const version = '16.11.0';
 /**
  * An object containing the components of the GraphQL.js version string
  */
@@ -31342,7 +31367,7 @@ const version = '16.10.0';
 exports.version = version;
 const versionInfo = Object.freeze({
   major: 16,
-  minor: 10,
+  minor: 11,
   patch: 0,
   preReleaseTag: null,
 });
