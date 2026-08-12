@@ -1882,6 +1882,7 @@ class Context {
         this.action = process.env.GITHUB_ACTION;
         this.actor = process.env.GITHUB_ACTOR;
         this.job = process.env.GITHUB_JOB;
+        this.runAttempt = parseInt(process.env.GITHUB_RUN_ATTEMPT, 10);
         this.runNumber = parseInt(process.env.GITHUB_RUN_NUMBER, 10);
         this.runId = parseInt(process.env.GITHUB_RUN_ID, 10);
         this.apiUrl = (_a = process.env.GITHUB_API_URL) !== null && _a !== void 0 ? _a : `https://api.github.com`;
@@ -3569,13 +3570,28 @@ var import_graphql = __nccwpck_require__(7);
 var import_auth_token = __nccwpck_require__(7864);
 
 // pkg/dist-src/version.js
-var VERSION = "5.2.1";
+var VERSION = "5.2.2";
 
 // pkg/dist-src/index.js
 var noop = () => {
 };
 var consoleWarn = console.warn.bind(console);
 var consoleError = console.error.bind(console);
+function createLogger(logger = {}) {
+  if (typeof logger.debug !== "function") {
+    logger.debug = noop;
+  }
+  if (typeof logger.info !== "function") {
+    logger.info = noop;
+  }
+  if (typeof logger.warn !== "function") {
+    logger.warn = consoleWarn;
+  }
+  if (typeof logger.error !== "function") {
+    logger.error = consoleError;
+  }
+  return logger;
+}
 var userAgentTrail = `octokit-core.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
 var Octokit = class {
   static {
@@ -3649,15 +3665,7 @@ var Octokit = class {
     }
     this.request = import_request.request.defaults(requestDefaults);
     this.graphql = (0, import_graphql.withCustomRequest)(this.request).defaults(requestDefaults);
-    this.log = Object.assign(
-      {
-        debug: noop,
-        info: noop,
-        warn: consoleWarn,
-        error: consoleError
-      },
-      options.log
-    );
+    this.log = createLogger(options.log);
     this.hook = hook;
     if (!options.authStrategy) {
       if (!options.auth) {
@@ -8355,7 +8363,7 @@ function assertValidExecutionArguments(schema, document, rawVariableValues) {
  */
 
 function buildExecutionContext(args) {
-  var _definition$name, _operation$variableDe;
+  var _definition$name, _operation$variableDe, _options$maxCoercionE;
 
   const {
     schema,
@@ -8367,6 +8375,7 @@ function buildExecutionContext(args) {
     fieldResolver,
     typeResolver,
     subscribeFieldResolver,
+    options,
   } = args;
   let operation;
   const fragments = Object.create(null);
@@ -8429,7 +8438,14 @@ function buildExecutionContext(args) {
       ? rawVariableValues
       : {},
     {
-      maxErrors: 50,
+      maxErrors:
+        (_options$maxCoercionE =
+          options === null || options === void 0
+            ? void 0
+            : options.maxCoercionErrors) !== null &&
+        _options$maxCoercionE !== void 0
+          ? _options$maxCoercionE
+          : 50,
     },
   );
 
@@ -9111,6 +9127,15 @@ const defaultTypeResolver = function (value, contextValue, info, abstractType) {
       if ((0, _isPromise.isPromise)(isTypeOfResult)) {
         promisedIsTypeOfResults[i] = isTypeOfResult;
       } else if (isTypeOfResult) {
+        if (promisedIsTypeOfResults.length) {
+          // Explicitly ignore any promise rejections
+          Promise.allSettled(promisedIsTypeOfResults)
+            /* c8 ignore next 3 */
+            .catch(() => {
+              // Do nothing
+            });
+        }
+
         return type.name;
       }
     }
@@ -10992,6 +11017,12 @@ Object.defineProperty(exports, "isSchema", ({
     return _index.isSchema;
   },
 }));
+Object.defineProperty(exports, "isSchemaCoordinateNode", ({
+  enumerable: true,
+  get: function () {
+    return _index2.isSchemaCoordinateNode;
+  },
+}));
 Object.defineProperty(exports, "isSelectionNode", ({
   enumerable: true,
   get: function () {
@@ -11100,6 +11131,12 @@ Object.defineProperty(exports, "parseConstValue", ({
     return _index2.parseConstValue;
   },
 }));
+Object.defineProperty(exports, "parseSchemaCoordinate", ({
+  enumerable: true,
+  get: function () {
+    return _index2.parseSchemaCoordinate;
+  },
+}));
 Object.defineProperty(exports, "parseType", ({
   enumerable: true,
   get: function () {
@@ -11160,6 +11197,12 @@ Object.defineProperty(exports, "recommendedRules", ({
     return _index4.recommendedRules;
   },
 }));
+Object.defineProperty(exports, "resolveASTSchemaCoordinate", ({
+  enumerable: true,
+  get: function () {
+    return _index6.resolveASTSchemaCoordinate;
+  },
+}));
 Object.defineProperty(exports, "resolveObjMapThunk", ({
   enumerable: true,
   get: function () {
@@ -11170,6 +11213,12 @@ Object.defineProperty(exports, "resolveReadonlyArrayThunk", ({
   enumerable: true,
   get: function () {
     return _index.resolveReadonlyArrayThunk;
+  },
+}));
+Object.defineProperty(exports, "resolveSchemaCoordinate", ({
+  enumerable: true,
+  get: function () {
+    return _index6.resolveSchemaCoordinate;
   },
 }));
 Object.defineProperty(exports, "responsePathAsArray", ({
@@ -12491,12 +12540,19 @@ const QueryDocumentKeys = {
   Name: [],
   Document: ['definitions'],
   OperationDefinition: [
+    'description',
     'name',
     'variableDefinitions',
     'directives',
     'selectionSet',
   ],
-  VariableDefinition: ['variable', 'type', 'defaultValue', 'directives'],
+  VariableDefinition: [
+    'description',
+    'variable',
+    'type',
+    'defaultValue',
+    'directives',
+  ],
   Variable: ['name'],
   SelectionSet: ['selections'],
   Field: ['alias', 'name', 'arguments', 'directives', 'selectionSet'],
@@ -12504,6 +12560,7 @@ const QueryDocumentKeys = {
   FragmentSpread: ['name', 'directives'],
   InlineFragment: ['typeCondition', 'directives', 'selectionSet'],
   FragmentDefinition: [
+    'description',
     'name', // Note: fragment variable definitions are deprecated and will removed in v17.0.0
     'variableDefinitions',
     'typeCondition',
@@ -12560,6 +12617,11 @@ const QueryDocumentKeys = {
   UnionTypeExtension: ['name', 'directives', 'types'],
   EnumTypeExtension: ['name', 'directives', 'values'],
   InputObjectTypeExtension: ['name', 'directives', 'fields'],
+  TypeCoordinate: ['name'],
+  MemberCoordinate: ['name', 'memberName'],
+  ArgumentCoordinate: ['name', 'fieldName', 'argumentName'],
+  DirectiveCoordinate: ['name'],
+  DirectiveArgumentCoordinate: ['name', 'argumentName'],
 };
 exports.QueryDocumentKeys = QueryDocumentKeys;
 const kindValues = new Set(Object.keys(QueryDocumentKeys));
@@ -13018,6 +13080,12 @@ Object.defineProperty(exports, "isExecutableDefinitionNode", ({
     return _predicates.isExecutableDefinitionNode;
   },
 }));
+Object.defineProperty(exports, "isSchemaCoordinateNode", ({
+  enumerable: true,
+  get: function () {
+    return _predicates.isSchemaCoordinateNode;
+  },
+}));
 Object.defineProperty(exports, "isSelectionNode", ({
   enumerable: true,
   get: function () {
@@ -13070,6 +13138,12 @@ Object.defineProperty(exports, "parseConstValue", ({
   enumerable: true,
   get: function () {
     return _parser.parseConstValue;
+  },
+}));
+Object.defineProperty(exports, "parseSchemaCoordinate", ({
+  enumerable: true,
+  get: function () {
+    return _parser.parseSchemaCoordinate;
   },
 }));
 Object.defineProperty(exports, "parseType", ({
@@ -13203,6 +13277,11 @@ exports.Kind = Kind;
   Kind['UNION_TYPE_EXTENSION'] = 'UnionTypeExtension';
   Kind['ENUM_TYPE_EXTENSION'] = 'EnumTypeExtension';
   Kind['INPUT_OBJECT_TYPE_EXTENSION'] = 'InputObjectTypeExtension';
+  Kind['TYPE_COORDINATE'] = 'TypeCoordinate';
+  Kind['MEMBER_COORDINATE'] = 'MemberCoordinate';
+  Kind['ARGUMENT_COORDINATE'] = 'ArgumentCoordinate';
+  Kind['DIRECTIVE_COORDINATE'] = 'DirectiveCoordinate';
+  Kind['DIRECTIVE_ARGUMENT_COORDINATE'] = 'DirectiveArgumentCoordinate';
 })(Kind || (exports.Kind = Kind = {}));
 /**
  * The enum type representing the possible kind values of AST nodes.
@@ -13223,7 +13302,10 @@ Object.defineProperty(exports, "__esModule", ({
   value: true,
 }));
 exports.Lexer = void 0;
+exports.createToken = createToken;
 exports.isPunctuatorTokenKind = isPunctuatorTokenKind;
+exports.printCodePointAt = printCodePointAt;
+exports.readName = readName;
 
 var _syntaxError = __nccwpck_require__(9619);
 
@@ -13326,6 +13408,7 @@ function isPunctuatorTokenKind(kind) {
     kind === _tokenKind.TokenKind.AMP ||
     kind === _tokenKind.TokenKind.PAREN_L ||
     kind === _tokenKind.TokenKind.PAREN_R ||
+    kind === _tokenKind.TokenKind.DOT ||
     kind === _tokenKind.TokenKind.SPREAD ||
     kind === _tokenKind.TokenKind.COLON ||
     kind === _tokenKind.TokenKind.EQUALS ||
@@ -13380,6 +13463,8 @@ function isTrailingSurrogate(code) {
  *
  * Printable ASCII is printed quoted, while other points are printed in Unicode
  * code point form (ie. U+1234).
+ *
+ * @internal
  */
 
 function printCodePointAt(lexer, location) {
@@ -13397,6 +13482,8 @@ function printCodePointAt(lexer, location) {
 }
 /**
  * Create a token with line and column location information.
+ *
+ * @internal
  */
 
 function createToken(lexer, kind, start, end, value) {
@@ -14198,6 +14285,8 @@ function readBlockString(lexer, start) {
  * Name ::
  *   - NameStart NameContinue* [lookahead != NameContinue]
  * ```
+ *
+ * @internal
  */
 
 function readName(lexer, start) {
@@ -14285,6 +14374,7 @@ Object.defineProperty(exports, "__esModule", ({
 exports.Parser = void 0;
 exports.parse = parse;
 exports.parseConstValue = parseConstValue;
+exports.parseSchemaCoordinate = parseSchemaCoordinate;
 exports.parseType = parseType;
 exports.parseValue = parseValue;
 
@@ -14297,6 +14387,8 @@ var _directiveLocation = __nccwpck_require__(2582);
 var _kinds = __nccwpck_require__(1123);
 
 var _lexer = __nccwpck_require__(6897);
+
+var _schemaCoordinateLexer = __nccwpck_require__(6137);
 
 var _source = __nccwpck_require__(203);
 
@@ -14364,6 +14456,29 @@ function parseType(source, options) {
   return type;
 }
 /**
+ * Given a string containing a GraphQL Schema Coordinate (ex. `Type.field`),
+ * parse the AST for that schema coordinate.
+ * Throws GraphQLError if a syntax error is encountered.
+ *
+ * Consider providing the results to the utility function:
+ * resolveASTSchemaCoordinate(). Or calling resolveSchemaCoordinate() directly
+ * with an unparsed source.
+ */
+
+function parseSchemaCoordinate(source) {
+  const sourceObj = (0, _source.isSource)(source)
+    ? source
+    : new _source.Source(source);
+  const lexer = new _schemaCoordinateLexer.SchemaCoordinateLexer(sourceObj);
+  const parser = new Parser(source, {
+    lexer,
+  });
+  parser.expectToken(_tokenKind.TokenKind.SOF);
+  const coordinate = parser.parseSchemaCoordinate();
+  parser.expectToken(_tokenKind.TokenKind.EOF);
+  return coordinate;
+}
+/**
  * This class is exported only to assist people in implementing their own parsers
  * without duplicating too much code and should be used only as last resort for cases
  * such as experimental syntax or if certain features could not be contributed upstream.
@@ -14377,11 +14492,18 @@ function parseType(source, options) {
 
 class Parser {
   constructor(source, options = {}) {
-    const sourceObj = (0, _source.isSource)(source)
-      ? source
-      : new _source.Source(source);
-    this._lexer = new _lexer.Lexer(sourceObj);
-    this._options = options;
+    const { lexer, ..._options } = options;
+
+    if (lexer) {
+      this._lexer = lexer;
+    } else {
+      const sourceObj = (0, _source.isSource)(source)
+        ? source
+        : new _source.Source(source);
+      this._lexer = new _lexer.Lexer(sourceObj);
+    }
+
+    this._options = _options;
     this._tokenCounter = 0;
   }
 
@@ -14448,6 +14570,14 @@ class Parser {
       ? this._lexer.lookahead()
       : this._lexer.token;
 
+    if (hasDescription && keywordToken.kind === _tokenKind.TokenKind.BRACE_L) {
+      throw (0, _syntaxError.syntaxError)(
+        this._lexer.source,
+        this._lexer.token.start,
+        'Unexpected description, descriptions are not supported on shorthand queries.',
+      );
+    }
+
     if (keywordToken.kind === _tokenKind.TokenKind.NAME) {
       switch (keywordToken.value) {
         case 'schema':
@@ -14475,14 +14605,6 @@ class Parser {
           return this.parseDirectiveDefinition();
       }
 
-      if (hasDescription) {
-        throw (0, _syntaxError.syntaxError)(
-          this._lexer.source,
-          this._lexer.token.start,
-          'Unexpected description, descriptions are supported only on type definitions.',
-        );
-      }
-
       switch (keywordToken.value) {
         case 'query':
         case 'mutation':
@@ -14491,7 +14613,17 @@ class Parser {
 
         case 'fragment':
           return this.parseFragmentDefinition();
+      }
 
+      if (hasDescription) {
+        throw (0, _syntaxError.syntaxError)(
+          this._lexer.source,
+          this._lexer.token.start,
+          'Unexpected description, only GraphQL definitions support descriptions.',
+        );
+      }
+
+      switch (keywordToken.value) {
         case 'extend':
           return this.parseTypeSystemExtension();
       }
@@ -14513,6 +14645,7 @@ class Parser {
       return this.node(start, {
         kind: _kinds.Kind.OPERATION_DEFINITION,
         operation: _ast.OperationTypeNode.QUERY,
+        description: undefined,
         name: undefined,
         variableDefinitions: [],
         directives: [],
@@ -14520,6 +14653,7 @@ class Parser {
       });
     }
 
+    const description = this.parseDescription();
     const operation = this.parseOperationType();
     let name;
 
@@ -14530,6 +14664,7 @@ class Parser {
     return this.node(start, {
       kind: _kinds.Kind.OPERATION_DEFINITION,
       operation,
+      description,
       name,
       variableDefinitions: this.parseVariableDefinitions(),
       directives: this.parseDirectives(false),
@@ -14574,6 +14709,7 @@ class Parser {
   parseVariableDefinition() {
     return this.node(this._lexer.token, {
       kind: _kinds.Kind.VARIABLE_DEFINITION,
+      description: this.parseDescription(),
       variable: this.parseVariable(),
       type:
         (this.expectToken(_tokenKind.TokenKind.COLON),
@@ -14722,6 +14858,7 @@ class Parser {
 
   parseFragmentDefinition() {
     const start = this._lexer.token;
+    const description = this.parseDescription();
     this.expectKeyword('fragment'); // Legacy support for defining variables within fragments changes
     // the grammar of FragmentDefinition:
     //   - fragment FragmentName VariableDefinitions? on TypeCondition Directives? SelectionSet
@@ -14729,6 +14866,7 @@ class Parser {
     if (this._options.allowLegacyFragmentVariables === true) {
       return this.node(start, {
         kind: _kinds.Kind.FRAGMENT_DEFINITION,
+        description,
         name: this.parseFragmentName(),
         variableDefinitions: this.parseVariableDefinitions(),
         typeCondition: (this.expectKeyword('on'), this.parseNamedType()),
@@ -14739,6 +14877,7 @@ class Parser {
 
     return this.node(start, {
       kind: _kinds.Kind.FRAGMENT_DEFINITION,
+      description,
       name: this.parseFragmentName(),
       typeCondition: (this.expectKeyword('on'), this.parseNamedType()),
       directives: this.parseDirectives(false),
@@ -15643,6 +15782,72 @@ class Parser {
     }
 
     throw this.unexpected(start);
+  } // Schema Coordinates
+
+  /**
+   * SchemaCoordinate :
+   *   - Name
+   *   - Name . Name
+   *   - Name . Name ( Name : )
+   *   - \@ Name
+   *   - \@ Name ( Name : )
+   */
+
+  parseSchemaCoordinate() {
+    const start = this._lexer.token;
+    const ofDirective = this.expectOptionalToken(_tokenKind.TokenKind.AT);
+    const name = this.parseName();
+    let memberName;
+
+    if (!ofDirective && this.expectOptionalToken(_tokenKind.TokenKind.DOT)) {
+      memberName = this.parseName();
+    }
+
+    let argumentName;
+
+    if (
+      (ofDirective || memberName) &&
+      this.expectOptionalToken(_tokenKind.TokenKind.PAREN_L)
+    ) {
+      argumentName = this.parseName();
+      this.expectToken(_tokenKind.TokenKind.COLON);
+      this.expectToken(_tokenKind.TokenKind.PAREN_R);
+    }
+
+    if (ofDirective) {
+      if (argumentName) {
+        return this.node(start, {
+          kind: _kinds.Kind.DIRECTIVE_ARGUMENT_COORDINATE,
+          name,
+          argumentName,
+        });
+      }
+
+      return this.node(start, {
+        kind: _kinds.Kind.DIRECTIVE_COORDINATE,
+        name,
+      });
+    } else if (memberName) {
+      if (argumentName) {
+        return this.node(start, {
+          kind: _kinds.Kind.ARGUMENT_COORDINATE,
+          name,
+          fieldName: memberName,
+          argumentName,
+        });
+      }
+
+      return this.node(start, {
+        kind: _kinds.Kind.MEMBER_COORDINATE,
+        name,
+        memberName,
+      });
+    }
+
+    return this.node(start, {
+      kind: _kinds.Kind.TYPE_COORDINATE,
+      name,
+    });
   } // Core parsing utility functions
 
   /**
@@ -15869,6 +16074,7 @@ Object.defineProperty(exports, "__esModule", ({
 exports.isConstValueNode = isConstValueNode;
 exports.isDefinitionNode = isDefinitionNode;
 exports.isExecutableDefinitionNode = isExecutableDefinitionNode;
+exports.isSchemaCoordinateNode = isSchemaCoordinateNode;
 exports.isSelectionNode = isSelectionNode;
 exports.isTypeDefinitionNode = isTypeDefinitionNode;
 exports.isTypeExtensionNode = isTypeExtensionNode;
@@ -15968,6 +16174,16 @@ function isTypeExtensionNode(node) {
     node.kind === _kinds.Kind.UNION_TYPE_EXTENSION ||
     node.kind === _kinds.Kind.ENUM_TYPE_EXTENSION ||
     node.kind === _kinds.Kind.INPUT_OBJECT_TYPE_EXTENSION
+  );
+}
+
+function isSchemaCoordinateNode(node) {
+  return (
+    node.kind === _kinds.Kind.TYPE_COORDINATE ||
+    node.kind === _kinds.Kind.MEMBER_COORDINATE ||
+    node.kind === _kinds.Kind.ARGUMENT_COORDINATE ||
+    node.kind === _kinds.Kind.DIRECTIVE_COORDINATE ||
+    node.kind === _kinds.Kind.DIRECTIVE_ARGUMENT_COORDINATE
   );
 }
 
@@ -16286,22 +16502,27 @@ const printDocASTReducer = {
   },
   OperationDefinition: {
     leave(node) {
-      const varDefs = wrap('(', join(node.variableDefinitions, ', '), ')');
-      const prefix = join(
-        [
-          node.operation,
-          join([node.name, varDefs]),
-          join(node.directives, ' '),
-        ],
-        ' ',
-      ); // Anonymous queries with no directives or variable definitions can use
+      const varDefs = hasMultilineItems(node.variableDefinitions)
+        ? wrap('(\n', join(node.variableDefinitions, '\n'), '\n)')
+        : wrap('(', join(node.variableDefinitions, ', '), ')');
+      const prefix =
+        wrap('', node.description, '\n') +
+        join(
+          [
+            node.operation,
+            join([node.name, varDefs]),
+            join(node.directives, ' '),
+          ],
+          ' ',
+        ); // Anonymous queries with no directives or variable definitions can use
       // the query short form.
 
       return (prefix === 'query' ? '' : prefix + ' ') + node.selectionSet;
     },
   },
   VariableDefinition: {
-    leave: ({ variable, type, defaultValue, directives }) =>
+    leave: ({ variable, type, defaultValue, directives, description }) =>
+      wrap('', description, '\n') +
       variable +
       ': ' +
       type +
@@ -16344,9 +16565,15 @@ const printDocASTReducer = {
       ),
   },
   FragmentDefinition: {
-    leave: (
-      { name, typeCondition, variableDefinitions, directives, selectionSet }, // Note: fragment variable definitions are experimental and may be changed
-    ) =>
+    leave: ({
+      name,
+      typeCondition,
+      variableDefinitions,
+      directives,
+      selectionSet,
+      description,
+    }) =>
+      wrap('', description, '\n') + // Note: fragment variable definitions are experimental and may be changed
       // or removed in the future.
       `fragment ${name}${wrap('(', join(variableDefinitions, ', '), ')')} ` +
       `on ${typeCondition} ${wrap('', join(directives, ' '), ' ')}` +
@@ -16550,6 +16777,24 @@ const printDocASTReducer = {
     leave: ({ name, directives, fields }) =>
       join(['extend input', name, join(directives, ' '), block(fields)], ' '),
   },
+  // Schema Coordinates
+  TypeCoordinate: {
+    leave: ({ name }) => name,
+  },
+  MemberCoordinate: {
+    leave: ({ name, memberName }) => join([name, wrap('.', memberName)]),
+  },
+  ArgumentCoordinate: {
+    leave: ({ name, fieldName, argumentName }) =>
+      join([name, wrap('.', fieldName), wrap('(', argumentName, ':)')]),
+  },
+  DirectiveCoordinate: {
+    leave: ({ name }) => join(['@', name]),
+  },
+  DirectiveArgumentCoordinate: {
+    leave: ({ name, argumentName }) =>
+      join(['@', name, wrap('(', argumentName, ':)')]),
+  },
 };
 /**
  * Given maybeArray, print an empty string if it is null or empty, otherwise
@@ -16601,6 +16846,185 @@ function hasMultilineItems(maybeArray) {
     _maybeArray$some !== void 0
     ? _maybeArray$some
     : false;
+}
+
+
+/***/ }),
+
+/***/ 6137:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true,
+}));
+exports.SchemaCoordinateLexer = void 0;
+
+var _syntaxError = __nccwpck_require__(9619);
+
+var _ast = __nccwpck_require__(2740);
+
+var _characterClasses = __nccwpck_require__(3271);
+
+var _lexer = __nccwpck_require__(6897);
+
+var _tokenKind = __nccwpck_require__(1743);
+
+/**
+ * Given a Source schema coordinate, creates a Lexer for that source.
+ * A SchemaCoordinateLexer is a stateful stream generator in that every time
+ * it is advanced, it returns the next token in the Source. Assuming the
+ * source lexes, the final Token emitted by the lexer will be of kind
+ * EOF, after which the lexer will repeatedly return the same EOF token
+ * whenever called.
+ */
+class SchemaCoordinateLexer {
+  /**
+   * The previously focused non-ignored token.
+   */
+
+  /**
+   * The currently focused non-ignored token.
+   */
+
+  /**
+   * The (1-indexed) line containing the current token.
+   * Since a schema coordinate may not contain newline, this value is always 1.
+   */
+  line = 1;
+  /**
+   * The character offset at which the current line begins.
+   * Since a schema coordinate may not contain newline, this value is always 0.
+   */
+
+  lineStart = 0;
+
+  constructor(source) {
+    const startOfFileToken = new _ast.Token(
+      _tokenKind.TokenKind.SOF,
+      0,
+      0,
+      0,
+      0,
+    );
+    this.source = source;
+    this.lastToken = startOfFileToken;
+    this.token = startOfFileToken;
+  }
+
+  get [Symbol.toStringTag]() {
+    return 'SchemaCoordinateLexer';
+  }
+  /**
+   * Advances the token stream to the next non-ignored token.
+   */
+
+  advance() {
+    this.lastToken = this.token;
+    const token = (this.token = this.lookahead());
+    return token;
+  }
+  /**
+   * Looks ahead and returns the next non-ignored token, but does not change
+   * the current Lexer token.
+   */
+
+  lookahead() {
+    let token = this.token;
+
+    if (token.kind !== _tokenKind.TokenKind.EOF) {
+      // Read the next token and form a link in the token linked-list.
+      const nextToken = readNextToken(this, token.end); // @ts-expect-error next is only mutable during parsing.
+
+      token.next = nextToken; // @ts-expect-error prev is only mutable during parsing.
+
+      nextToken.prev = token;
+      token = nextToken;
+    }
+
+    return token;
+  }
+}
+/**
+ * Gets the next token from the source starting at the given position.
+ */
+
+exports.SchemaCoordinateLexer = SchemaCoordinateLexer;
+
+function readNextToken(lexer, start) {
+  const body = lexer.source.body;
+  const bodyLength = body.length;
+  const position = start;
+
+  if (position < bodyLength) {
+    const code = body.charCodeAt(position);
+
+    switch (code) {
+      case 0x002e:
+        // .
+        return (0, _lexer.createToken)(
+          lexer,
+          _tokenKind.TokenKind.DOT,
+          position,
+          position + 1,
+        );
+
+      case 0x0028:
+        // (
+        return (0, _lexer.createToken)(
+          lexer,
+          _tokenKind.TokenKind.PAREN_L,
+          position,
+          position + 1,
+        );
+
+      case 0x0029:
+        // )
+        return (0, _lexer.createToken)(
+          lexer,
+          _tokenKind.TokenKind.PAREN_R,
+          position,
+          position + 1,
+        );
+
+      case 0x003a:
+        // :
+        return (0, _lexer.createToken)(
+          lexer,
+          _tokenKind.TokenKind.COLON,
+          position,
+          position + 1,
+        );
+
+      case 0x0040:
+        // @
+        return (0, _lexer.createToken)(
+          lexer,
+          _tokenKind.TokenKind.AT,
+          position,
+          position + 1,
+        );
+    } // Name
+
+    if ((0, _characterClasses.isNameStart)(code)) {
+      return (0, _lexer.readName)(lexer, position);
+    }
+
+    throw (0, _syntaxError.syntaxError)(
+      lexer.source,
+      position,
+      `Invalid character: ${(0, _lexer.printCodePointAt)(lexer, position)}.`,
+    );
+  }
+
+  return (0, _lexer.createToken)(
+    lexer,
+    _tokenKind.TokenKind.EOF,
+    bodyLength,
+    bodyLength,
+  );
 }
 
 
@@ -16705,6 +17129,7 @@ exports.TokenKind = TokenKind;
   TokenKind['AMP'] = '&';
   TokenKind['PAREN_L'] = '(';
   TokenKind['PAREN_R'] = ')';
+  TokenKind['DOT'] = '.';
   TokenKind['SPREAD'] = '...';
   TokenKind['COLON'] = ':';
   TokenKind['EQUALS'] = '=';
@@ -16881,10 +17306,7 @@ function visit(root, visitor, visitorKeys = _ast.QueryDocumentKeys) {
             }
           }
         } else {
-          node = Object.defineProperties(
-            {},
-            Object.getOwnPropertyDescriptors(node),
-          );
+          node = { ...node };
 
           for (const [editKey, editValue] of edits) {
             node[editKey] = editValue;
@@ -22780,7 +23202,10 @@ function coerceInputValueImpl(inputValue, type, onError, path) {
   }
 
   if ((0, _definition.isInputObjectType)(type)) {
-    if (!(0, _isObjectLike.isObjectLike)(inputValue)) {
+    if (
+      !(0, _isObjectLike.isObjectLike)(inputValue) ||
+      Array.isArray(inputValue)
+    ) {
       onError(
         (0, _Path.pathToArray)(path),
         inputValue,
@@ -24759,6 +25184,18 @@ Object.defineProperty(exports, "printType", ({
     return _printSchema.printType;
   },
 }));
+Object.defineProperty(exports, "resolveASTSchemaCoordinate", ({
+  enumerable: true,
+  get: function () {
+    return _resolveSchemaCoordinate.resolveASTSchemaCoordinate;
+  },
+}));
+Object.defineProperty(exports, "resolveSchemaCoordinate", ({
+  enumerable: true,
+  get: function () {
+    return _resolveSchemaCoordinate.resolveSchemaCoordinate;
+  },
+}));
 Object.defineProperty(exports, "separateOperations", ({
   enumerable: true,
   get: function () {
@@ -24837,6 +25274,8 @@ var _typeComparators = __nccwpck_require__(6539);
 var _assertValidName = __nccwpck_require__(873);
 
 var _findBreakingChanges = __nccwpck_require__(7461);
+
+var _resolveSchemaCoordinate = __nccwpck_require__(1787);
 
 
 /***/ }),
@@ -25418,6 +25857,274 @@ function printDescription(def, indentation = '', firstInBlock = true) {
   const prefix =
     indentation && !firstInBlock ? '\n' + indentation : indentation;
   return prefix + blockString.replace(/\n/g, '\n' + indentation) + '\n';
+}
+
+
+/***/ }),
+
+/***/ 1787:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true,
+}));
+exports.resolveASTSchemaCoordinate = resolveASTSchemaCoordinate;
+exports.resolveSchemaCoordinate = resolveSchemaCoordinate;
+
+var _inspect = __nccwpck_require__(5742);
+
+var _kinds = __nccwpck_require__(1123);
+
+var _parser = __nccwpck_require__(4929);
+
+var _definition = __nccwpck_require__(4169);
+
+/**
+ * A schema coordinate is resolved in the context of a GraphQL schema to
+ * uniquely identify a schema element. It returns undefined if the schema
+ * coordinate does not resolve to a schema element, meta-field, or introspection
+ * schema element. It will throw if the containing schema element (if
+ * applicable) does not exist.
+ *
+ * https://spec.graphql.org/draft/#sec-Schema-Coordinates.Semantics
+ */
+function resolveSchemaCoordinate(schema, schemaCoordinate) {
+  return resolveASTSchemaCoordinate(
+    schema,
+    (0, _parser.parseSchemaCoordinate)(schemaCoordinate),
+  );
+}
+/**
+ * TypeCoordinate : Name
+ */
+
+function resolveTypeCoordinate(schema, schemaCoordinate) {
+  // 1. Let {typeName} be the value of {Name}.
+  const typeName = schemaCoordinate.name.value;
+  const type = schema.getType(typeName); // 2. Return the type in the {schema} named {typeName} if it exists.
+
+  if (type == null) {
+    return;
+  }
+
+  return {
+    kind: 'NamedType',
+    type,
+  };
+}
+/**
+ * MemberCoordinate : Name . Name
+ */
+
+function resolveMemberCoordinate(schema, schemaCoordinate) {
+  // 1. Let {typeName} be the value of the first {Name}.
+  // 2. Let {type} be the type in the {schema} named {typeName}.
+  const typeName = schemaCoordinate.name.value;
+  const type = schema.getType(typeName); // 3. Assert: {type} must exist, and must be an Enum, Input Object, Object or Interface type.
+
+  if (!type) {
+    throw new Error(
+      `Expected ${(0, _inspect.inspect)(
+        typeName,
+      )} to be defined as a type in the schema.`,
+    );
+  }
+
+  if (
+    !(0, _definition.isEnumType)(type) &&
+    !(0, _definition.isInputObjectType)(type) &&
+    !(0, _definition.isObjectType)(type) &&
+    !(0, _definition.isInterfaceType)(type)
+  ) {
+    throw new Error(
+      `Expected ${(0, _inspect.inspect)(
+        typeName,
+      )} to be an Enum, Input Object, Object or Interface type.`,
+    );
+  } // 4. If {type} is an Enum type:
+
+  if ((0, _definition.isEnumType)(type)) {
+    // 1. Let {enumValueName} be the value of the second {Name}.
+    const enumValueName = schemaCoordinate.memberName.value;
+    const enumValue = type.getValue(enumValueName); // 2. Return the enum value of {type} named {enumValueName} if it exists.
+
+    if (enumValue == null) {
+      return;
+    }
+
+    return {
+      kind: 'EnumValue',
+      type,
+      enumValue,
+    };
+  } // 5. Otherwise, if {type} is an Input Object type:
+
+  if ((0, _definition.isInputObjectType)(type)) {
+    // 1. Let {inputFieldName} be the value of the second {Name}.
+    const inputFieldName = schemaCoordinate.memberName.value;
+    const inputField = type.getFields()[inputFieldName]; // 2. Return the input field of {type} named {inputFieldName} if it exists.
+
+    if (inputField == null) {
+      return;
+    }
+
+    return {
+      kind: 'InputField',
+      type,
+      inputField,
+    };
+  } // 6. Otherwise:
+  // 1. Let {fieldName} be the value of the second {Name}.
+
+  const fieldName = schemaCoordinate.memberName.value;
+  const field = type.getFields()[fieldName]; // 2. Return the field of {type} named {fieldName} if it exists.
+
+  if (field == null) {
+    return;
+  }
+
+  return {
+    kind: 'Field',
+    type,
+    field,
+  };
+}
+/**
+ * ArgumentCoordinate : Name . Name ( Name : )
+ */
+
+function resolveArgumentCoordinate(schema, schemaCoordinate) {
+  // 1. Let {typeName} be the value of the first {Name}.
+  // 2. Let {type} be the type in the {schema} named {typeName}.
+  const typeName = schemaCoordinate.name.value;
+  const type = schema.getType(typeName); // 3. Assert: {type} must exist, and be an Object or Interface type.
+
+  if (type == null) {
+    throw new Error(
+      `Expected ${(0, _inspect.inspect)(
+        typeName,
+      )} to be defined as a type in the schema.`,
+    );
+  }
+
+  if (
+    !(0, _definition.isObjectType)(type) &&
+    !(0, _definition.isInterfaceType)(type)
+  ) {
+    throw new Error(
+      `Expected ${(0, _inspect.inspect)(
+        typeName,
+      )} to be an object type or interface type.`,
+    );
+  } // 4. Let {fieldName} be the value of the second {Name}.
+  // 5. Let {field} be the field of {type} named {fieldName}.
+
+  const fieldName = schemaCoordinate.fieldName.value;
+  const field = type.getFields()[fieldName]; // 7. Assert: {field} must exist.
+
+  if (field == null) {
+    throw new Error(
+      `Expected ${(0, _inspect.inspect)(
+        fieldName,
+      )} to exist as a field of type ${(0, _inspect.inspect)(
+        typeName,
+      )} in the schema.`,
+    );
+  } // 7. Let {fieldArgumentName} be the value of the third {Name}.
+
+  const fieldArgumentName = schemaCoordinate.argumentName.value;
+  const fieldArgument = field.args.find(
+    (arg) => arg.name === fieldArgumentName,
+  ); // 8. Return the argument of {field} named {fieldArgumentName} if it exists.
+
+  if (fieldArgument == null) {
+    return;
+  }
+
+  return {
+    kind: 'FieldArgument',
+    type,
+    field,
+    fieldArgument,
+  };
+}
+/**
+ * DirectiveCoordinate : \@ Name
+ */
+
+function resolveDirectiveCoordinate(schema, schemaCoordinate) {
+  // 1. Let {directiveName} be the value of {Name}.
+  const directiveName = schemaCoordinate.name.value;
+  const directive = schema.getDirective(directiveName); // 2. Return the directive in the {schema} named {directiveName} if it exists.
+
+  if (!directive) {
+    return;
+  }
+
+  return {
+    kind: 'Directive',
+    directive,
+  };
+}
+/**
+ * DirectiveArgumentCoordinate : \@ Name ( Name : )
+ */
+
+function resolveDirectiveArgumentCoordinate(schema, schemaCoordinate) {
+  // 1. Let {directiveName} be the value of the first {Name}.
+  // 2. Let {directive} be the directive in the {schema} named {directiveName}.
+  const directiveName = schemaCoordinate.name.value;
+  const directive = schema.getDirective(directiveName); // 3. Assert {directive} must exist.
+
+  if (!directive) {
+    throw new Error(
+      `Expected ${(0, _inspect.inspect)(
+        directiveName,
+      )} to be defined as a directive in the schema.`,
+    );
+  } // 4. Let {directiveArgumentName} be the value of the second {Name}.
+
+  const {
+    argumentName: { value: directiveArgumentName },
+  } = schemaCoordinate;
+  const directiveArgument = directive.args.find(
+    (arg) => arg.name === directiveArgumentName,
+  ); // 5. Return the argument of {directive} named {directiveArgumentName} if it exists.
+
+  if (!directiveArgument) {
+    return;
+  }
+
+  return {
+    kind: 'DirectiveArgument',
+    directive,
+    directiveArgument,
+  };
+}
+/**
+ * Resolves schema coordinate from a parsed SchemaCoordinate node.
+ */
+
+function resolveASTSchemaCoordinate(schema, schemaCoordinate) {
+  switch (schemaCoordinate.kind) {
+    case _kinds.Kind.TYPE_COORDINATE:
+      return resolveTypeCoordinate(schema, schemaCoordinate);
+
+    case _kinds.Kind.MEMBER_COORDINATE:
+      return resolveMemberCoordinate(schema, schemaCoordinate);
+
+    case _kinds.Kind.ARGUMENT_COORDINATE:
+      return resolveArgumentCoordinate(schema, schemaCoordinate);
+
+    case _kinds.Kind.DIRECTIVE_COORDINATE:
+      return resolveDirectiveCoordinate(schema, schemaCoordinate);
+
+    case _kinds.Kind.DIRECTIVE_ARGUMENT_COORDINATE:
+      return resolveDirectiveArgumentCoordinate(schema, schemaCoordinate);
+  }
 }
 
 
@@ -26310,6 +27017,7 @@ class ValidationContext extends ASTValidationContext {
               node: variable,
               type: typeInfo.getInputType(),
               defaultValue: typeInfo.getDefaultValue(),
+              parentType: typeInfo.getParentInputType(),
             });
           },
         }),
@@ -30412,13 +31120,7 @@ function ValuesOfCorrectTypeRule(context) {
       }
 
       if (type.isOneOf) {
-        validateOneOfInputObject(
-          context,
-          node,
-          type,
-          fieldNodeMap,
-          variableDefinitions,
-        );
+        validateOneOfInputObject(context, node, type, fieldNodeMap);
       }
     },
 
@@ -30541,13 +31243,7 @@ function isValidValueNode(context, node) {
   }
 }
 
-function validateOneOfInputObject(
-  context,
-  node,
-  type,
-  fieldNodeMap,
-  variableDefinitions,
-) {
+function validateOneOfInputObject(context, node, type, fieldNodeMap) {
   var _fieldNodeMap$keys$;
 
   const keys = Object.keys(fieldNodeMap);
@@ -30571,9 +31267,6 @@ function validateOneOfInputObject(
       ? void 0
       : _fieldNodeMap$keys$.value;
   const isNullLiteral = !value || value.kind === _kinds.Kind.NULL;
-  const isVariable =
-    (value === null || value === void 0 ? void 0 : value.kind) ===
-    _kinds.Kind.VARIABLE;
 
   if (isNullLiteral) {
     context.reportError(
@@ -30584,25 +31277,6 @@ function validateOneOfInputObject(
         },
       ),
     );
-    return;
-  }
-
-  if (isVariable) {
-    const variableName = value.name.value;
-    const definition = variableDefinitions[variableName];
-    const isNullableVariable =
-      definition.type.kind !== _kinds.Kind.NON_NULL_TYPE;
-
-    if (isNullableVariable) {
-      context.reportError(
-        new _GraphQLError.GraphQLError(
-          `Variable "${variableName}" must be non-nullable to be used for OneOf Input Object "${type.name}".`,
-          {
-            nodes: [node],
-          },
-        ),
-      );
-    }
   }
 }
 
@@ -30704,7 +31378,7 @@ function VariablesInAllowedPositionRule(context) {
       leave(operation) {
         const usages = context.getRecursiveVariableUsages(operation);
 
-        for (const { node, type, defaultValue } of usages) {
+        for (const { node, type, defaultValue, parentType } of usages) {
           const varName = node.name.value;
           const varDef = varDefMap[varName];
 
@@ -30732,6 +31406,21 @@ function VariablesInAllowedPositionRule(context) {
               context.reportError(
                 new _GraphQLError.GraphQLError(
                   `Variable "$${varName}" of type "${varTypeStr}" used in position expecting type "${typeStr}".`,
+                  {
+                    nodes: [varDef, node],
+                  },
+                ),
+              );
+            }
+
+            if (
+              (0, _definition.isInputObjectType)(parentType) &&
+              parentType.isOneOf &&
+              (0, _definition.isNullableType)(varType)
+            ) {
+              context.reportError(
+                new _GraphQLError.GraphQLError(
+                  `Variable "$${varName}" is of type "${varType}" but must be non-nullable to be used for OneOf Input Object "${parentType}".`,
                   {
                     nodes: [varDef, node],
                   },
@@ -31334,7 +32023,7 @@ exports.versionInfo = exports.version = void 0;
 /**
  * A string containing the version of the GraphQL.js library
  */
-const version = '16.10.0';
+const version = '16.12.0';
 /**
  * An object containing the components of the GraphQL.js version string
  */
@@ -31342,7 +32031,7 @@ const version = '16.10.0';
 exports.version = version;
 const versionInfo = Object.freeze({
   major: 16,
-  minor: 10,
+  minor: 12,
   patch: 0,
   preReleaseTag: null,
 });
