@@ -24,7 +24,7 @@ jobs:
           cat <<-'EOF'
             ${{ toJSON(github.event) }}
           EOF
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Re-run pull request workflows
         uses: ./
         with:
